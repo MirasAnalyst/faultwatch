@@ -37,6 +37,16 @@ def add_trend_features(Z: pd.DataFrame, asset: pd.Series, time: pd.Series, windo
     return pd.DataFrame(out, index=df.index).loc[Z.index]
 
 
+def rul_features(Z: pd.DataFrame, df: pd.DataFrame, detector, asset_id: str, time: str,
+                 trend_window: int) -> pd.DataFrame:
+    """Inputs to the remaining-life model: residual levels, residual trends,
+    the health score and machine age. Shared by training and serving."""
+    X = pd.concat([Z, add_trend_features(Z, df[asset_id], df[time], trend_window)], axis=1)
+    X["health_score"] = np.log1p(detector.score(Z))
+    X["cycle"] = df[time].values
+    return X
+
+
 def nasa_score(y_true, y_pred):
     """Asymmetric PHM08 score: predicting failure too late is punished more."""
     d = np.asarray(y_pred) - np.asarray(y_true)

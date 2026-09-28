@@ -17,10 +17,11 @@ from sklearn.model_selection import GroupKFold
 from ..anomaly import HealthDetector, first_alarm
 from ..data import LOADERS
 from ..explain import plot_importance, shap_importance
-from ..models import add_trend_features, nasa_score, regressor
+from ..models import nasa_score, regressor, rul_features
 from ..plotting import INK, INK_2, NEUTRAL, SERIES, style_axes
 from ..regime import RegimeNormalizer
 from ..schedule import evaluate_plan, plan_maintenance
+from ..serve import healthy_reference, save_bundle
 
 
 def _normalizer(cfg, per_asset=None, smoothing=None):
@@ -109,14 +110,9 @@ def run(cfg: dict, out: Path) -> dict:
     det.fit(Z_tr[healthy])
     Z_te = norm.transform(test)
 
-    def features(df, Z):
-        tw = cfg["rul"]["trend_window"]
-        X = pd.concat([Z, add_trend_features(Z, df[a], df[t], tw)], axis=1)
-        X["health_score"] = np.log1p(det.score(Z))
-        X["cycle"] = df[t].values
-        return X
-
-    X_tr, X_te = features(train, Z_tr), features(test, Z_te)
+    tw = cfg["rul"]["trend_window"]
+    X_tr = rul_features(Z_tr, train, det, a, t, tw)
+    X_te = rul_features(Z_te, test, det, a, t, tw)
     cap = cfg["rul"]["cap"]
     y_tr = train["RUL"].clip(upper=cap)
 
@@ -176,6 +172,15 @@ def run(cfg: dict, out: Path) -> dict:
                "top_shap_features": imp.head(5).round(3).to_dict(),
                "maintenance": maint}
     (out / "metrics.json").write_text(json.dumps(metrics, indent=2))
+
+    cols = list(dict.fromkeys([a, t] + cfg["regime_features"] + cfg["sensors"]))
+    demo = test[cols].merge(test_rul.rename(columns={"unit": a, "RUL": "rul_at_end"}), on=a)
+    demo["true_rul"] = demo["rul_at_end"] + demo.groupby(a)[t].transform("max") - demo[t]
+    save_bundle(cfg, root, normalizer=norm, detector=det, rul_model=rul_model,
+                rul_features=list(X_tr.columns), rul_cap=cap, trend_window=tw,
+                reference=healthy_reference(train[healthy], Z_tr, det, cfg["regime_features"]),
+                demo=demo.drop(columns="rul_at_end"), maintenance=m,
+                rul_uncertainty=cv_rmse_near)
     return metrics
 
 

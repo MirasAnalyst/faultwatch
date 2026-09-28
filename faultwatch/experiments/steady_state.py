@@ -22,6 +22,7 @@ from ..explain import plot_importance, shap_importance
 from ..models import classifier, regressor
 from ..plotting import INK, INK_2, SERIES, style_axes
 from ..regime import RegimeNormalizer
+from ..serve import healthy_reference, save_bundle
 
 BINS = [0.2, 0.4, 0.6, 0.8, 1.0001]
 BIN_LABELS = ["20-40%", "40-60%", "60-80%", "80-100%"]
@@ -102,9 +103,9 @@ def run(cfg: dict, out: Path) -> dict:
     plot_importance(imp, "What the fault classifier looks at (SHAP)", out / "shap_fault_classifier.png")
 
     # ---- 3. severity (how bad) ------------------------------------------
-    sev_metrics = {}
+    sev_metrics, sev_models = {}, {}
     for comp, spec in cfg["components"].items():
-        reg = regressor(cfg["seed"]).fit(X_tr, tr[spec["column"]])
+        reg = sev_models[comp] = regressor(cfg["seed"]).fit(X_tr, tr[spec["column"]])
         p = reg.predict(X_te)
         y = te[spec["column"]]
         sev_metrics[comp] = {
@@ -131,6 +132,13 @@ def run(cfg: dict, out: Path) -> dict:
         "example_alert": example,
     }
     (out / "metrics.json").write_text(json.dumps(metrics, indent=2))
+
+    truth_cols = [spec["column"] for spec in cfg["components"].values()] + ["fault_class", "severity"]
+    demo = te.sample(min(len(te), 1500), random_state=cfg["seed"])[list(dict.fromkeys(regime + sensors + truth_cols))]
+    save_bundle(cfg, root, normalizer=norm, detector=det, classifier=clf,
+                classifier_features=list(X_tr.columns), severity_models=sev_models,
+                reference=healthy_reference(h_tr, Z_tr, det, regime),
+                demo=demo.sort_values(regime + ["severity"]).reset_index(drop=True))
     return metrics
 
 
