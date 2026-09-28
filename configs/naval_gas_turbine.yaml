@@ -1,0 +1,39 @@
+# Marine: frigate CODLAG propulsion gas turbine (UCI CBM dataset, simulated)
+name: naval_gas_turbine
+short_name: marine propulsion gas turbine
+description: Marine propulsion gas turbine - compressor and turbine decay
+dataset: naval
+data_dir: data/naval
+experiment: steady_state          # labeled degradation states, many load points
+asset_id: state_id
+
+# What sets the operating point (load). Sensors are judged relative to it.
+regime_features: [lever_pos]
+
+sensors:
+  - gt_torque
+  - gt_rpm
+  - gg_rpm
+  - prop_torque_stbd      # port torque is identical in this data, so omitted
+  - hpt_exit_temp         # T48
+  - comp_out_temp         # T2
+  - hpt_exit_press        # P48
+  - comp_out_press        # P2
+  - exhaust_press
+  - turbine_inj_ctrl
+  - fuel_flow
+# comp_in_temp / comp_in_press are constant (ambient) in this dataset.
+
+# Degradation labels -> fault classes
+components:
+  compressor: {column: kMc, new: 1.000, worst: 0.950}
+  turbine:    {column: kMt, new: 1.000, worst: 0.975}
+healthy_max_severity: 0.2      # <20% of the way to the worst decay = healthy
+fault_min_severity: 0.2
+
+# The alarm a plant would have today, for comparison
+baseline_alarm_sensor: hpt_exit_temp
+
+detector: {method: mahalanobis, quantile: 0.99}
+test_fraction: 0.3
+seed: 42

@@ -1,0 +1,77 @@
+{
+  "dataset": "Gas turbine engine fleet run to failure (HPC degradation)",
+  "engines": {
+    "train": 100,
+    "test": 100
+  },
+  "early_warning": [
+    {
+      "method": "Fixed s4 high alarm",
+      "engines": 100,
+      "warned_in_time_pct": 94.0,
+      "median_warning_cycles": 11.0,
+      "min_warning_cycles": 1.0,
+      "warned_20plus_cycles_pct": 17.0,
+      "false_early_alarm_pct": 0.0,
+      "missed_pct": 6.0
+    },
+    {
+      "method": "Multivariate, fleet baseline",
+      "engines": 100,
+      "warned_in_time_pct": 47.0,
+      "median_warning_cycles": 27.0,
+      "min_warning_cycles": 2.0,
+      "warned_20plus_cycles_pct": 34.0,
+      "false_early_alarm_pct": 0.0,
+      "missed_pct": 53.0
+    },
+    {
+      "method": "FaultWatch (per-engine baseline)",
+      "engines": 100,
+      "warned_in_time_pct": 100.0,
+      "median_warning_cycles": 84.0,
+      "min_warning_cycles": 41.0,
+      "warned_20plus_cycles_pct": 100.0,
+      "false_early_alarm_pct": 0.0,
+      "missed_pct": 0.0
+    }
+  ],
+  "rul": {
+    "test_engines": 100,
+    "rmse": 12.303127400445002,
+    "rmse_truth_capped": 11.074089201975683,
+    "mae": 9.69824418661173,
+    "nasa_score": 244.3958324683351,
+    "baseline_constant_rmse": 43.06703554245684,
+    "cv_rmse_train": 10.672908232938283,
+    "cv_rmse_near_failure": 10.582283612125137
+  },
+  "top_shap_features": {
+    "health_score": 21.032,
+    "z_s4": 4.57,
+    "cycle": 3.991,
+    "z_s15": 2.933,
+    "z_s20": 1.526
+  },
+  "maintenance": {
+    "planning_horizon": 30,
+    "engines_failing_in_horizon": 25,
+    "rul_uncertainty_cycles": 10.6,
+    "solver_status": "Optimal",
+    "run_to_failure": {
+      "serviced_in_time": 0,
+      "failures": 25,
+      "total_cost": 6250000.0
+    },
+    "faultwatch_plan": {
+      "serviced_in_time": 29,
+      "failures": 1,
+      "total_cost": 902150.0
+    },
+    "perfect_foresight": {
+      "serviced_in_time": 25,
+      "failures": 0,
+      "total_cost": 507650.0
+    }
+  }
+}

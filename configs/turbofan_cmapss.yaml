@@ -1,0 +1,36 @@
+# Power / aero gas turbine: NASA C-MAPSS FD001 run-to-failure fleet
+name: turbofan_cmapss_fd001
+description: Gas turbine engine fleet run to failure (HPC degradation)
+dataset: cmapss
+data_dir: data/cmapss
+subset: FD001
+experiment: run_to_failure        # time series per machine, ending in failure
+asset_id: unit
+time: cycle
+
+regime_features: []               # FD001 runs at one operating condition.
+                                  # For FD002/FD004 set [op1, op2, op3].
+sensors: [s2, s3, s4, s7, s8, s9, s11, s12, s13, s14, s15, s17, s20, s21]
+# s1, s5, s6, s10, s16, s18, s19 are flat in FD001 and carry no information.
+
+healthy_window: 30                # first N cycles of each engine = known healthy
+normalization:
+  per_asset_baseline: true        # each engine judged against its own early life
+  baseline_window: 30
+  smoothing_window: 10
+
+detector: {method: mahalanobis, quantile: 0.99, persistence: 5}
+baseline_alarm_sensor: s4         # LPT outlet temperature - a typical exhaust-temp alarm
+early_life_fraction: 0.4          # an alarm in the first 40% of life counts as false
+
+rul:
+  cap: 125                        # standard piecewise-linear RUL target
+  trend_window: 20
+
+maintenance:
+  horizon: 30                     # cycles (read as days: ~1 flight or run per day)
+  capacity_per_day: 3             # engines the crews can service per day
+  preventive_cost: 20000
+  failure_cost: 250000
+  wasted_life_cost: 150           # per cycle of useful life thrown away
+seed: 42

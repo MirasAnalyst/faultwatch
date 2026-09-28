@@ -1,0 +1,104 @@
+{
+  "dataset": "Marine propulsion gas turbine - compressor and turbine decay",
+  "rows": {
+    "train": 8352,
+    "test": 3582,
+    "healthy_train": 351,
+    "healthy_test": 99
+  },
+  "detection": [
+    {
+      "method": "Fixed hpt_exit_temp high alarm",
+      "false_alarm_rate": 0.0,
+      "detect_20-40%": 0.0,
+      "detect_40-60%": 0.0,
+      "detect_60-80%": 0.0,
+      "detect_80-100%": 0.0,
+      "detect_all_faults": 0.0
+    },
+    {
+      "method": "Load-aware hpt_exit_temp alarm",
+      "false_alarm_rate": 0.0,
+      "detect_20-40%": 0.46944444444444444,
+      "detect_40-60%": 0.7482638888888888,
+      "detect_60-80%": 0.7905282331511839,
+      "detect_80-100%": 0.782608695652174,
+      "detect_all_faults": 0.7470571346540339
+    },
+    {
+      "method": "Multivariate, not load-aware",
+      "false_alarm_rate": 0.010101010101010102,
+      "detect_20-40%": 0.008333333333333333,
+      "detect_40-60%": 0.024305555555555556,
+      "detect_60-80%": 0.03825136612021858,
+      "detect_80-100%": 0.08902691511387163,
+      "detect_all_faults": 0.05397645707723227
+    },
+    {
+      "method": "FaultWatch (multivariate, load-aware)",
+      "false_alarm_rate": 0.030303030303030304,
+      "detect_20-40%": 0.7388888888888889,
+      "detect_40-60%": 0.9618055555555556,
+      "detect_60-80%": 0.9754098360655737,
+      "detect_80-100%": 0.9875776397515528,
+      "detect_all_faults": 0.9537754809072638
+    }
+  ],
+  "fault_classification": {
+    "accuracy": 0.9782244556113903,
+    "macro_f1": 0.9405697496517728,
+    "classes": [
+      "combined",
+      "compressor",
+      "healthy",
+      "turbine"
+    ]
+  },
+  "severity_estimation": {
+    "compressor": {
+      "mae_coefficient": 0.0005407762241260731,
+      "mae_pct_of_range": 1.0815524482521452,
+      "r2": 0.9962568018254786
+    },
+    "turbine": {
+      "mae_coefficient": 0.00041467933775767956,
+      "mae_pct_of_range": 1.6587173510307167,
+      "r2": 0.9899056312607608
+    }
+  },
+  "top_shap_features": {
+    "z_gg_rpm": 1.2782,
+    "z_comp_out_press": 1.0071,
+    "z_comp_out_temp": 0.8869,
+    "z_turbine_inj_ctrl": 0.5076,
+    "z_hpt_exit_press": 0.4122
+  },
+  "example_alert": {
+    "operating_point": {
+      "lever_pos": 3.144
+    },
+    "health_score": 247.2,
+    "alarm_threshold": 24.0,
+    "top_sensors": {
+      "comp_out_press": "52%",
+      "hpt_exit_temp": "27%",
+      "gt_rpm": "10%"
+    },
+    "sensor_deviation_sigma": {
+      "comp_out_press": 11.1,
+      "hpt_exit_temp": 6.9,
+      "gt_rpm": -7.5
+    },
+    "diagnosis": {
+      "turbine": "100%",
+      "combined": "0%",
+      "compressor": "0%",
+      "healthy": "0%"
+    },
+    "truth": {
+      "class": "turbine",
+      "kMc": 0.998,
+      "kMt": 0.983
+    }
+  }
+}

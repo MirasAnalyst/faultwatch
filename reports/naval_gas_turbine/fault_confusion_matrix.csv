@@ -1,0 +1,5 @@
+,pred_combined,pred_compressor,pred_healthy,pred_turbine
+true_combined,2421,13,0,14
+true_compressor,9,452,7,0
+true_healthy,0,5,83,11
+true_turbine,12,0,7,548
