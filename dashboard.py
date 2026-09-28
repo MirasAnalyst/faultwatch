@@ -155,7 +155,8 @@ with tab_live:
         classes = sorted(df[truth].unique()) if truth else []
         pick = st.radio("Show samples whose true condition is", ["all"] + classes, horizontal=True)
         sub = df if pick == "all" else df[df[truth] == pick]
-        cols = s.cfg["regime_features"] + (["severity", truth] if truth else []) + \
+        extra = [c for c in ("severity", "fault_size_in", "run", "sample") if c in df]
+        cols = s.cfg["regime_features"] + extra + ([truth] if truth else []) + \
             ["alarm", "health_score", "diagnosis", "diagnosis_confidence", "top_sensors"]
         st.dataframe(sub[cols].style.format({"health_score": "{:.1f}", "severity": "{:.0%}",
                                             "diagnosis_confidence": "{:.0%}"}),
@@ -170,7 +171,8 @@ with tab_live:
         k2.caption(f"{row['diagnosis_confidence']:.0%} confidence")
         if truth:
             k3.metric("Truth", row[truth])
-            k3.caption(f"severity {row['severity']:.0%} of the way to worst state")
+            if "severity" in row:
+                k3.caption(f"severity {row['severity']:.0%} of the way to worst state")
         sev = {c.removeprefix("severity_"): row[c] for c in df.columns if c.startswith("severity_")}
         if sev:
             comps = s.cfg.get("components", {})

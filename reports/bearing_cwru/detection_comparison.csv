@@ -1,0 +1,5 @@
+method,false_alarm_rate,detection_rate
+Overall vibration (RMS) alarm,0.0,1.0
+High/low limits on every sensor,0.22580645161290322,1.0
+"Multivariate, not load-aware",0.0,1.0
+FaultWatch,0.0967741935483871,1.0

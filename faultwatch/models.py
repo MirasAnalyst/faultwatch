@@ -15,6 +15,15 @@ def classifier(seed=42):
     return lgb.LGBMClassifier(random_state=seed, class_weight="balanced", **GBM_PARAMS)
 
 
+def make_classifier(kind="gbm", seed=42):
+    """'gbm' (default) or 'logistic' - a linear model on a few physically
+    meaningful features, for assets with only a handful of fault examples."""
+    if kind == "logistic":
+        from sklearn.linear_model import LogisticRegression
+        return LogisticRegression(C=0.3, class_weight="balanced", max_iter=5000)
+    return classifier(seed)
+
+
 def regressor(seed=42):
     return lgb.LGBMRegressor(random_state=seed, **GBM_PARAMS)
 

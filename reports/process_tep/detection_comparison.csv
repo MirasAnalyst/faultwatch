@@ -1,0 +1,3 @@
+method,false_alarm_rate,detection_rate,runs_detected_pct,median_delay_samples
+High/low limits on every sensor,0.3990740740740741,0.8677976190476191,100.0,2.0
+FaultWatch,0.021296296296296296,0.7414880952380952,100.0,12.0

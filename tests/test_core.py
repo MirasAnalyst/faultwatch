@@ -37,6 +37,32 @@ def test_detector_flags_fault_but_not_healthy():
     assert contrib["b"] > contrib["a"]          # blames the right sensor
 
 
+def test_blocked_calibration_holds_false_alarms_on_autocorrelated_data():
+    """A random calibration slice of a slow-moving series is nearly a copy of
+    the fit data -> threshold too low. Blocked cross-fitting fixes that."""
+    rng = np.random.default_rng(0)
+
+    def ar1(n):
+        x = np.zeros((n, 8))
+        for t in range(1, n):
+            x[t] = 0.97 * x[t - 1] + rng.normal(0, 1, 8)
+        return pd.DataFrame(x)
+
+    train, new = ar1(400), ar1(4000)
+    fa = {c: (HealthDetector(quantile=0.99, calibration=c).fit(train).score(new) >
+              HealthDetector(quantile=0.99, calibration=c).fit(train).threshold_).mean()
+          for c in ("random", "blocked")}
+    assert fa["blocked"] < fa["random"]
+
+
+def test_univariate_limits_hit_false_alarm_budget():
+    from faultwatch.experiments.labeled_faults import univariate_limits
+    h = pd.DataFrame(np.random.default_rng(1).normal(size=(5000, 10)))
+    lo, hi = univariate_limits(h, list(h.columns), 0.05)
+    fa = ((h < lo) | (h > hi)).any(axis=1).mean()
+    assert 0.03 < fa <= 0.05
+
+
 def test_first_alarm_needs_persistence():
     flags = np.array([1, 0, 1, 1, 0, 1, 1, 1, 1])
     t = np.arange(len(flags))

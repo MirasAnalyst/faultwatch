@@ -13,7 +13,10 @@ from .plotting import style_axes, INK, INK_2, SERIES
 
 def shap_importance(model, X: pd.DataFrame, max_rows=2000, seed=42) -> pd.Series:
     Xs = X.sample(min(len(X), max_rows), random_state=seed)
-    sv = shap.TreeExplainer(model).shap_values(Xs)
+    if hasattr(model, "coef_"):       # linear model
+        sv = shap.LinearExplainer(model, Xs).shap_values(Xs)
+    else:
+        sv = shap.TreeExplainer(model).shap_values(Xs)
     if isinstance(sv, list):          # older shap, multiclass
         sv = np.stack(sv, axis=-1)
     sv = np.abs(np.asarray(sv))

@@ -1,0 +1,108 @@
+{
+  "dataset": "Chemical process plant - 21 scripted process faults",
+  "samples": {
+    "train": 10580,
+    "test": 21120,
+    "healthy_train": 500,
+    "healthy_test": 4320
+  },
+  "detection": [
+    {
+      "method": "High/low limits on every sensor",
+      "false_alarm_rate": 0.3990740740740741,
+      "detection_rate": 0.8677976190476191,
+      "runs_detected_pct": 100.0,
+      "median_delay_samples": 2.0
+    },
+    {
+      "method": "FaultWatch",
+      "false_alarm_rate": 0.021296296296296296,
+      "detection_rate": 0.7414880952380952,
+      "runs_detected_pct": 100.0,
+      "median_delay_samples": 12.0
+    }
+  ],
+  "detection_by_fault": {
+    "High/low limits on every sensor": {
+      "IDV1": 1.0,
+      "IDV2": 0.99,
+      "IDV3": 0.585,
+      "IDV4": 1.0,
+      "IDV5": 0.665,
+      "IDV6": 1.0,
+      "IDV7": 1.0,
+      "IDV8": 0.9975,
+      "IDV9": 0.585,
+      "IDV10": 0.88,
+      "IDV11": 0.92,
+      "IDV12": 0.99875,
+      "IDV13": 0.985,
+      "IDV14": 1.0,
+      "IDV15": 0.49125,
+      "IDV16": 0.9175,
+      "IDV17": 0.98625,
+      "IDV18": 0.96375,
+      "IDV19": 0.6725,
+      "IDV20": 0.87875,
+      "IDV21": 0.7075
+    },
+    "FaultWatch": {
+      "IDV1": 0.9975,
+      "IDV2": 0.9875,
+      "IDV3": 0.05625,
+      "IDV4": 1.0,
+      "IDV5": 0.5475,
+      "IDV6": 1.0,
+      "IDV7": 1.0,
+      "IDV8": 0.98125,
+      "IDV9": 0.055,
+      "IDV10": 0.75875,
+      "IDV11": 0.76125,
+      "IDV12": 0.9925,
+      "IDV13": 0.955,
+      "IDV14": 1.0,
+      "IDV15": 0.11625,
+      "IDV16": 0.7375,
+      "IDV17": 0.955,
+      "IDV18": 0.9075,
+      "IDV19": 0.55625,
+      "IDV20": 0.69125,
+      "IDV21": 0.515
+    }
+  },
+  "fault_classification": {
+    "accuracy": 0.6250473484848484,
+    "macro_f1": 0.6828947288549887,
+    "recall_by_class": {
+      "IDV1": 0.98625,
+      "IDV10": 0.53375,
+      "IDV11": 0.71625,
+      "IDV12": 0.795,
+      "IDV13": 0.22875,
+      "IDV14": 0.975,
+      "IDV15": 0.22125,
+      "IDV16": 0.54125,
+      "IDV17": 0.92375,
+      "IDV18": 0.87,
+      "IDV19": 0.875,
+      "IDV2": 0.97875,
+      "IDV20": 0.655,
+      "IDV21": 0.5425,
+      "IDV3": 0.235,
+      "IDV4": 0.98,
+      "IDV5": 0.98875,
+      "IDV6": 0.99875,
+      "IDV7": 1.0,
+      "IDV8": 0.6125,
+      "IDV9": 0.1825,
+      "normal": 0.3076388888888889
+    }
+  },
+  "top_shap_features": {
+    "z_xmv_10": 0.3574,
+    "z_xmv_9": 0.328,
+    "z_xmeas_18": 0.2919,
+    "z_xmeas_21": 0.2815,
+    "z_xmeas_19": 0.2613
+  }
+}

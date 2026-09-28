@@ -1,0 +1,29 @@
+# Rotating equipment: motor / pump rolling-element bearing vibration (CWRU test rig)
+name: bearing_cwru
+short_name: rolling-element bearings
+description: Rolling-element bearing vibration - inner race, outer race and ball defects
+dataset: cwru
+data_dir: data/cwru
+experiment: labeled_faults
+loader_args: {window: 4096, test_defect_size: 0.014, test_fraction: 0.3}
+# Test = every 0.014" defect recording (bearings never seen in training) + last 30% of the healthy recordings
+
+# Motor load sets the operating point.
+regime_features: [load_hp]
+
+# Features computed from the 12 kHz drive-end accelerometer (faultwatch/data.py)
+sensors: [rms, crest, kurtosis, skewness,
+          band_0_1k, band_1_2k, band_2_3k, band_3_4k, band_4_6k,
+          env_bpfi, env_bpfo, env_bsf]
+
+healthy_label: normal
+baseline_alarm: {sensor: rms, label: Overall vibration (RMS) alarm}   # ISO 10816-style
+severity: {defect_size_in: fault_size_in}
+
+# Which fault: the defect frequency that dominates the envelope spectrum, as a
+# vibration analyst reads it. Chosen by leave-one-defect-size-out CV on the
+# training bearings (78% vs 51% for a tree model on all features).
+classifier: {model: logistic, features: [env_bpfi, env_bpfo, env_bsf]}
+
+detector: {method: mahalanobis, quantile: 0.99, calibration: blocked}
+seed: 42

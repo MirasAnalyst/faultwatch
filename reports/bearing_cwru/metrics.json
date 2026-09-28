@@ -1,0 +1,77 @@
+{
+  "dataset": "Rolling-element bearing vibration - inner race, outer race and ball defects",
+  "samples": {
+    "train": 767,
+    "test": 379,
+    "healthy_train": 70,
+    "healthy_test": 31
+  },
+  "detection": [
+    {
+      "method": "Overall vibration (RMS) alarm",
+      "false_alarm_rate": 0.0,
+      "detection_rate": 1.0
+    },
+    {
+      "method": "High/low limits on every sensor",
+      "false_alarm_rate": 0.22580645161290322,
+      "detection_rate": 1.0
+    },
+    {
+      "method": "Multivariate, not load-aware",
+      "false_alarm_rate": 0.0,
+      "detection_rate": 1.0
+    },
+    {
+      "method": "FaultWatch",
+      "false_alarm_rate": 0.0967741935483871,
+      "detection_rate": 1.0
+    }
+  ],
+  "detection_by_fault": {
+    "Overall vibration (RMS) alarm": {
+      "ball": 1.0,
+      "inner_race": 1.0,
+      "outer_race": 1.0
+    },
+    "High/low limits on every sensor": {
+      "ball": 1.0,
+      "inner_race": 1.0,
+      "outer_race": 1.0
+    },
+    "Multivariate, not load-aware": {
+      "ball": 1.0,
+      "inner_race": 1.0,
+      "outer_race": 1.0
+    },
+    "FaultWatch": {
+      "ball": 1.0,
+      "inner_race": 1.0,
+      "outer_race": 1.0
+    }
+  },
+  "fault_classification": {
+    "accuracy": 0.48812664907651715,
+    "macro_f1": 0.42373269382414624,
+    "recall_by_class": {
+      "ball": 0.4827586206896552,
+      "inner_race": 0.8793103448275862,
+      "normal": 0.8709677419354839,
+      "outer_race": 0.0
+    }
+  },
+  "top_shap_features": {
+    "z_env_bsf": 1.6018,
+    "z_env_bpfi": 1.4748,
+    "z_env_bpfo": 1.2656
+  },
+  "severity_estimation": {
+    "defect_size_in": {
+      "mae": 0.005042906694365154,
+      "range": [
+        0.0,
+        0.021
+      ]
+    }
+  }
+}
