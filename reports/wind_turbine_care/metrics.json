@@ -1,0 +1,121 @@
+{
+  "dataset": "Wind turbine SCADA (5 turbines) - gearbox, generator bearing, hydraulic and transformer faults",
+  "events": {
+    "anomaly": 12,
+    "normal": 10
+  },
+  "event_detection": [
+    {
+      "method": "High-temperature limits (training max per sensor)",
+      "anomaly_events": 12,
+      "detected": 3,
+      "median_lead_hours": 207.5,
+      "anomaly_events_with_alarm_before_event": 2,
+      "normal_events": 10,
+      "normal_events_with_false_alarm": 2,
+      "sample_alarm_rate_on_normal_data": 0.007497989125698494
+    },
+    {
+      "method": "Multivariate, not power-aware",
+      "anomaly_events": 12,
+      "detected": 3,
+      "median_lead_hours": 212.83333333333334,
+      "anomaly_events_with_alarm_before_event": 0,
+      "normal_events": 10,
+      "normal_events_with_false_alarm": 0,
+      "sample_alarm_rate_on_normal_data": 0.0
+    },
+    {
+      "method": "FaultWatch",
+      "anomaly_events": 12,
+      "detected": 5,
+      "median_lead_hours": 132.0,
+      "anomaly_events_with_alarm_before_event": 0,
+      "normal_events": 10,
+      "normal_events_with_false_alarm": 0,
+      "sample_alarm_rate_on_normal_data": 0.0
+    }
+  ],
+  "root_cause_check": [
+    {
+      "event_id": 68,
+      "description": "Transformer failure",
+      "top_sensors_at_first_alarm": {
+        "rotor_inverter_igbt_3_temp": 0.44,
+        "rotor_inverter_igbt_1_temp": 0.43,
+        "stator_winding_2_temp": 0.05
+      }
+    },
+    {
+      "event_id": 22,
+      "description": "Hydraulic group",
+      "top_sensors_at_first_alarm": {}
+    },
+    {
+      "event_id": 72,
+      "description": "Gearbox failure",
+      "top_sensors_at_first_alarm": {}
+    },
+    {
+      "event_id": 73,
+      "description": "Hydraulic group",
+      "top_sensors_at_first_alarm": {}
+    },
+    {
+      "event_id": 0,
+      "description": "Generator bearing failure",
+      "top_sensors_at_first_alarm": {}
+    },
+    {
+      "event_id": 26,
+      "description": "Hydraulic group",
+      "top_sensors_at_first_alarm": {}
+    },
+    {
+      "event_id": 40,
+      "description": "Generator bearing failure",
+      "top_sensors_at_first_alarm": {
+        "generator_bearing_nde_temp": 0.67,
+        "stator_winding_2_temp": 0.07,
+        "gearbox_hss_bearing_temp": 0.06
+      }
+    },
+    {
+      "event_id": 42,
+      "description": "Hydraulic group",
+      "top_sensors_at_first_alarm": {
+        "stator_winding_2_temp": 0.58,
+        "stator_winding_1_temp": 0.34,
+        "rotor_inverter_igbt_2_temp": 0.03
+      }
+    },
+    {
+      "event_id": 10,
+      "description": "Gearbox failure",
+      "top_sensors_at_first_alarm": {}
+    },
+    {
+      "event_id": 45,
+      "description": "Hydraulic group",
+      "top_sensors_at_first_alarm": {
+        "rotor_inverter_igbt_3_temp": 0.92,
+        "transformer_l2_temp": 0.04,
+        "stator_winding_2_temp": 0.02
+      }
+    },
+    {
+      "event_id": 84,
+      "description": "Hydraulic group",
+      "top_sensors_at_first_alarm": {
+        "rotor_inverter_igbt_3_temp": 0.69,
+        "busbar_temp": 0.16,
+        "nacelle_controller_temp": 0.03
+      }
+    },
+    {
+      "event_id": 51,
+      "description": "Gearbox bearings damaged",
+      "top_sensors_at_first_alarm": {}
+    }
+  ]
+}

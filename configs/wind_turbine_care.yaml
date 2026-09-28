@@ -1,0 +1,31 @@
+# Power generation: onshore wind turbines, SCADA + fault logbook (CARE to Compare, Wind Farm A)
+name: wind_turbine_care
+short_name: wind turbines
+description: Wind turbine SCADA (5 turbines) - gearbox, generator bearing, hydraulic and transformer faults
+dataset: care
+data_dir: data/care/wind_farm_a
+experiment: event_detection
+
+# Operating point: what the turbine is being asked to do and the weather it runs in.
+# power_1h (last hour of power) captures thermal lag of the drivetrain.
+regime_features: [power, power_1h, wind_speed, rotor_rpm, ambient_temp]
+
+# Component temperatures - each judged against what it should read at this operating point
+sensors: [gearbox_hss_bearing_temp, gearbox_oil_temp,
+          generator_bearing_de_temp, generator_bearing_nde_temp,
+          stator_winding_1_temp, stator_winding_2_temp, stator_winding_3_temp,
+          hydraulic_oil_temp, transformer_l1_temp, transformer_l2_temp, transformer_l3_temp,
+          grid_inverter_igbt_temp, rotor_inverter_igbt_1_temp, rotor_inverter_igbt_2_temp,
+          rotor_inverter_igbt_3_temp, converter_cooling_water_temp, choke_coil_temp, vcp_board_temp,
+          busbar_temp, split_ring_chamber_temp, hub_controller_temp, nacelle_controller_temp,
+          nose_cone_temp, nacelle_temp]
+
+# Fixed in advance, not tuned on the events: ~2,000 scored samples per two-week
+# window means a 1% per-sample rate would guarantee chatter, so 0.1%; residuals
+# averaged over 3 h; an alarm must hold for 1 h.
+normalization: {smoothing_window: 18}
+detector: {method: mahalanobis, quantile: 0.999, persistence: 6, calibration: blocked}
+
+demo_event: 40                # turbine 10 generator bearing failure -> API / dashboard demo
+plot_events: [40, 84, 0]     # generator bearing (caught), hydraulic (caught), generator bearing (missed)
+seed: 42

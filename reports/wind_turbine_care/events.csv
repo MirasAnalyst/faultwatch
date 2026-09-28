@@ -1,0 +1,23 @@
+event_id,asset,label,description,top_sensors_at_first_alarm,High-temperature limits (training max per sensor)|alarm_any,High-temperature limits (training max per sensor)|sample_alarm_rate_normal,High-temperature limits (training max per sensor)|detected,High-temperature limits (training max per sensor)|false_before_event,"Multivariate, not power-aware|alarm_any","Multivariate, not power-aware|sample_alarm_rate_normal","Multivariate, not power-aware|detected","Multivariate, not power-aware|false_before_event","Multivariate, not power-aware|lead_hours",FaultWatch|alarm_any,FaultWatch|sample_alarm_rate_normal,FaultWatch|detected,FaultWatch|false_before_event,FaultWatch|lead_hours,High-temperature limits (training max per sensor)|lead_hours
+68,11,anomaly,Transformer failure,"{'rotor_inverter_igbt_3_temp': 0.44, 'rotor_inverter_igbt_1_temp': 0.43, 'stator_winding_2_temp': 0.05}",True,,False,False,True,,True,False,212.83333333333334,True,,True,False,212.83333333333334,
+22,21,anomaly,Hydraulic group,{},False,,False,False,False,,False,False,,False,,False,False,,
+72,21,anomaly,Gearbox failure,{},False,0.0,False,False,False,0.0,False,False,,False,0.0,False,False,,
+73,0,anomaly,Hydraulic group,{},True,0.06018518518518518,True,True,False,0.0,False,False,,False,0.0,False,False,,139.83333333333334
+0,0,anomaly,Generator bearing failure,{},True,0.059027777777777776,True,True,True,0.0,False,False,,True,0.0,False,False,,207.5
+26,0,anomaly,Hydraulic group,{},False,,False,False,False,,False,False,,False,,False,False,,
+40,10,anomaly,Generator bearing failure,"{'generator_bearing_nde_temp': 0.67, 'stator_winding_2_temp': 0.07, 'gearbox_hss_bearing_temp': 0.06}",True,0.0,True,False,True,0.0,True,False,215.0,True,0.0,True,False,214.66666666666666,215.66666666666666
+42,10,anomaly,Hydraulic group,"{'stator_winding_2_temp': 0.58, 'stator_winding_1_temp': 0.34, 'rotor_inverter_igbt_2_temp': 0.03}",False,,False,False,False,,False,False,,True,,True,False,74.0,
+10,10,anomaly,Gearbox failure,{},False,0.0,False,False,False,0.0,False,False,,False,0.0,False,False,,
+45,13,anomaly,Hydraulic group,"{'rotor_inverter_igbt_3_temp': 0.92, 'transformer_l2_temp': 0.04, 'stator_winding_2_temp': 0.02}",False,0.0,False,False,True,0.0,True,False,132.0,True,0.0,True,False,132.0,
+84,13,anomaly,Hydraulic group,"{'rotor_inverter_igbt_3_temp': 0.69, 'busbar_temp': 0.16, 'nacelle_controller_temp': 0.03}",False,0.0,False,False,False,0.0,False,False,,True,0.0,True,False,27.0,
+25,11,normal,,{},True,0.004952538175815105,,,False,0.0,,,,False,0.0,,,,
+69,11,normal,,{},True,0.010798303123794832,,,False,0.0,,,,False,0.0,,,,
+13,21,normal,,{},False,0.0,,,False,0.0,,,,False,0.0,,,,
+24,0,normal,,{},False,0.0,,,False,0.0,,,,False,0.0,,,,
+3,10,normal,,{},False,0.0,,,False,0.0,,,,False,0.0,,,,
+17,10,normal,,{},False,0.0,,,False,0.0,,,,False,0.0,,,,
+38,13,normal,,{},False,0.0,,,False,0.0,,,,False,0.0,,,,
+71,0,normal,,{},False,0.0,,,False,0.0,,,,False,0.0,,,,
+14,13,normal,,{},False,0.0,,,False,0.0,,,,False,0.0,,,,
+92,11,normal,,{},False,0.0,,,False,0.0,,,,False,0.0,,,,
+51,21,anomaly,Gearbox bearings damaged,{},False,0.0,False,False,False,0.0,False,False,,False,0.0,False,False,,

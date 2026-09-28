@@ -79,7 +79,8 @@ class Scorer:
     @property
     def required_columns(self) -> list[str]:
         cols = list(self.cfg["sensors"]) + list(self.cfg["regime_features"])
-        if self.b.get("rul_model") is not None or self.norm.per_asset_baseline:
+        if (self.b.get("rul_model") is not None or self.norm.per_asset_baseline
+                or self.norm.smoothing_window > 1):
             cols += [self.cfg["asset_id"], self.cfg["time"]]
         return list(dict.fromkeys(cols))
 

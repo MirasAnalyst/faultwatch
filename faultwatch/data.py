@@ -157,4 +157,46 @@ def load_tep(data_dir: str | Path) -> pd.DataFrame:
     return pd.concat(parts, ignore_index=True)
 
 
-LOADERS = {"naval": load_naval, "cmapss": load_cmapss, "cwru": load_cwru, "tep": load_tep}
+# ---------------------------------------------------------------------------
+# Wind turbine SCADA: CARE to Compare, Wind Farm A (EDP open data, onshore, Portugal)
+CARE_A_COLUMNS = {   # 10-minute averages; names from feature_description.csv
+    "sensor_0_avg": "ambient_temp", "wind_speed_3_avg": "wind_speed", "power_30_avg": "power",
+    "sensor_52_avg": "rotor_rpm", "sensor_18_avg": "generator_rpm", "sensor_5_avg": "pitch_angle",
+    "sensor_6_avg": "hub_controller_temp", "sensor_7_avg": "nacelle_controller_temp",
+    "sensor_8_avg": "choke_coil_temp", "sensor_9_avg": "vcp_board_temp",
+    "sensor_10_avg": "converter_cooling_water_temp",
+    "sensor_11_avg": "gearbox_hss_bearing_temp", "sensor_12_avg": "gearbox_oil_temp",
+    "sensor_13_avg": "generator_bearing_de_temp", "sensor_14_avg": "generator_bearing_nde_temp",
+    "sensor_15_avg": "stator_winding_1_temp", "sensor_16_avg": "stator_winding_2_temp",
+    "sensor_17_avg": "stator_winding_3_temp", "sensor_19_avg": "split_ring_chamber_temp",
+    "sensor_20_avg": "busbar_temp", "sensor_21_avg": "grid_inverter_igbt_temp",
+    "sensor_35_avg": "rotor_inverter_igbt_1_temp", "sensor_36_avg": "rotor_inverter_igbt_2_temp",
+    "sensor_37_avg": "rotor_inverter_igbt_3_temp", "sensor_38_avg": "transformer_l1_temp",
+    "sensor_39_avg": "transformer_l2_temp", "sensor_40_avg": "transformer_l3_temp",
+    "sensor_41_avg": "hydraulic_oil_temp", "sensor_43_avg": "nacelle_temp",
+    "sensor_53_avg": "nose_cone_temp",
+}
+NORMAL_STATUS = (0, 2)   # normal production, idling
+
+
+def load_care(data_dir: str | Path, lag_samples: int = 6):
+    """Returns (datasets, events). `datasets` maps event_id -> DataFrame for one
+    turbine: a normal-operation training period followed by a prediction
+    period that contains the event. `events` is event_info.csv."""
+    d = Path(data_dir)
+    events = pd.read_csv(d / "event_info.csv", sep=";", encoding="latin1")
+    datasets = {}
+    for eid in events["event_id"]:
+        f = pd.read_csv(d / "datasets" / f"{eid}.csv", sep=";",
+                        usecols=["time_stamp", "asset_id", "id", "train_test", "status_type_id", *CARE_A_COLUMNS])
+        f = f.rename(columns=CARE_A_COLUMNS).sort_values("id").reset_index(drop=True)
+        f["time_stamp"] = pd.to_datetime(f["time_stamp"])
+        # temperatures lag load: include the last hour of power as an operating-point input
+        f["power_1h"] = f["power"].rolling(lag_samples, min_periods=1).mean()
+        f["normal_status"] = f["status_type_id"].isin(NORMAL_STATUS)
+        datasets[int(eid)] = f
+    return datasets, events
+
+
+LOADERS = {"naval": load_naval, "cmapss": load_cmapss, "cwru": load_cwru, "tep": load_tep,
+           "care": load_care}

@@ -42,6 +42,14 @@ def axis_style(chart):
                  .configure_view(stroke=None))
 
 
+def log_axis(values: pd.Series, title: str):
+    """Log y-axis with one gridline per decade."""
+    v = values[values > 0]
+    lo, hi = int(np.floor(np.log10(v.min()))), int(np.ceil(np.log10(v.max())))
+    return alt.Y(f"{values.name}:Q", scale=alt.Scale(type="log"), title=title,
+                 axis=alt.Axis(values=[10.0 ** k for k in range(lo, hi + 1)], format="~s"))
+
+
 def status_badge(alarm: bool) -> str:
     return (":red[**▲ ALARM**]" if alarm else ":green[**● Normal**]")
 
@@ -51,7 +59,7 @@ def contributions_chart(shares: dict):
     df = df[df["share"] >= 0.005]
     bars = alt.Chart(df).mark_bar(color=SERIES[0], cornerRadiusEnd=4, height=18).encode(
         x=alt.X("share:Q", axis=alt.Axis(format="%", tickCount=5, title="share of health score")),
-        y=alt.Y("sensor:N", sort="-x", title=None),
+        y=alt.Y("sensor:N", sort="-x", title=None, axis=alt.Axis(labelLimit=260)),
         tooltip=["sensor", alt.Tooltip("share:Q", format=".0%")])
     labels = bars.mark_text(align="left", dx=4, color=INK_2).encode(text=alt.Text("share:Q", format=".0%"))
     return axis_style((bars + labels).properties(height=40 * len(df) + 20))
@@ -65,7 +73,11 @@ if not S:
              "`python run.py configs/*.yaml` first.")
     st.stop()
 
-name = st.sidebar.selectbox("Asset type", list(S), format_func=lambda n: S[n].cfg.get("description", n))
+names = list(S)
+wanted = st.query_params.get("asset")              # deep link: ?asset=wind_turbine_care
+name = st.sidebar.selectbox("Asset type", names, index=names.index(wanted) if wanted in names else 0,
+                            format_func=lambda n: S[n].cfg.get("description", n))
+st.query_params["asset"] = name
 s = S[name]
 st.caption(f"{s.cfg.get('description', name)} · held-out data never seen in training · "
            f"alarm threshold {s.det.threshold_:.0f}")
@@ -116,12 +128,9 @@ with tab_live:
         left, right = st.columns(2)
         with left:
             gp = g[g[t] > s.norm.smoothing_window]                  # skip filter warm-up
-            decades = [10.0 ** k for k in range(int(np.floor(np.log10(max(gp["health_score"].min(), 1e-3)))),
-                                                 int(np.ceil(np.log10(gp["health_score"].max()))) + 1)]
             base = alt.Chart(gp).encode(x=alt.X(f"{t}:Q", title="Cycle"))
             line = base.mark_line(color=SERIES[0], strokeWidth=2).encode(
-                y=alt.Y("health_score:Q", scale=alt.Scale(type="log"),
-                        axis=alt.Axis(values=decades, format="~s"), title="Health score (log)"),
+                y=log_axis(gp["health_score"], "Health score (log)"),
                 tooltip=[t, alt.Tooltip("health_score:Q", format=".0f"), "top_sensors"])
             thr = alt.Chart(pd.DataFrame({"y": [s.det.threshold_]})).mark_rule(
                 color=NEUTRAL, strokeDash=[5, 4]).encode(y="y:Q")
@@ -144,6 +153,43 @@ with tab_live:
         st.markdown("**What is driving the health score now**")
         st.altair_chart(contributions_chart(s.score(g[s.required_columns], top_n=6)["top_sensors"].iloc[-1]),
                         width="stretch")
+
+    elif s.b.get("classifier") is None:                       # one machine's timeline (SCADA)
+        a, t = s.cfg["asset_id"], s.cfg["time"]
+        g = df.sort_values(t)
+        alarm_col = "alarm_confirmed" if "alarm_confirmed" in g else "alarm"
+        st.markdown(f"**{s.cfg.get('demo_description', '')}**. The shaded band is the labelled pre-failure "
+                    "window, which ends at the logged failure.")
+        first = g[g[alarm_col]]
+        win = g[g["event_window"]] if "event_window" in g else g.iloc[0:0]
+        c1, c2, c3 = st.columns(3)
+        c1.metric("Samples scored", f"{len(g):,}")
+        c2.metric("Time in alarm", f"{g[alarm_col].mean():.1%}")
+        if len(first) and len(win):
+            lead = (win["time_stamp"].max() - first["time_stamp"].min()) / pd.Timedelta(days=1)
+            c3.metric("First alarm before failure", f"{lead:.1f} days" if lead > 0 else "none")
+        base = alt.Chart(g).encode(x=alt.X("time_stamp:T", title=None))
+        band = (alt.Chart(pd.DataFrame({"start": [win["time_stamp"].min()], "end": [win["time_stamp"].max()]}))
+                .mark_rect(color=SERIES[1], opacity=0.12).encode(x="start:T", x2="end:T")) if len(win) else None
+        line = base.mark_line(color=SERIES[0], strokeWidth=1.5).encode(
+            y=log_axis(g["health_score"], "Health score (log)"),
+            tooltip=[alt.Tooltip("time_stamp:T", format="%d %b %H:%M"),
+                     alt.Tooltip("health_score:Q", format=".0f"), "top_sensors"])
+        thr = alt.Chart(pd.DataFrame({"y": [s.det.threshold_]})).mark_rule(
+            color=NEUTRAL, strokeDash=[5, 4]).encode(y="y:Q")
+        layers = ([band] if band is not None else []) + [line, thr]
+        st.markdown("**Health score** (dashed: alarm threshold)")
+        st.altair_chart(axis_style(alt.layer(*layers).properties(height=300)), width="stretch")
+        days = sorted(g["time_stamp"].dt.floor("D").unique())
+        day = st.select_slider("Inspect day", options=days, value=days[-1],
+                               format_func=lambda d: pd.Timestamp(d).strftime("%d %b"))
+        sel = g[g["time_stamp"].dt.floor("D") == day]
+        worst = sel.loc[sel["health_score"].idxmax()]
+        st.markdown(f"**Worst sample that day** · {worst['time_stamp']:%d %b %H:%M} · "
+                    f"health score {worst['health_score']:.0f} · {status_badge(bool(worst[alarm_col]))}")
+        hist = df.sort_values(t)
+        upto = hist[hist[t] <= worst[t]][s.required_columns]
+        st.altair_chart(contributions_chart(s.score(upto, top_n=6)["top_sensors"].iloc[-1]), width="stretch")
 
     else:                                                     # labeled-states asset
         truth = "fault_class" if "fault_class" in df else None
