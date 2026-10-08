@@ -24,6 +24,7 @@ import json
 import sqlite3
 import time
 import uuid
+from contextlib import contextmanager
 from pathlib import Path
 
 import numpy as np
@@ -51,8 +52,15 @@ class MonitorStore:
         with self._db() as c:
             c.executescript(SCHEMA)
 
+    @contextmanager
     def _db(self):
-        return sqlite3.connect(self.path, timeout=10)
+        """Commit on success and always close (sqlite3's own context manager only commits)."""
+        con = sqlite3.connect(self.path, timeout=10)
+        try:
+            with con:
+                yield con
+        finally:
+            con.close()
 
     # ---- writes ---------------------------------------------------------------
     def log_call(self, endpoint: str, asset: str = "", rows: int = 0, latency_ms: float = 0.0,

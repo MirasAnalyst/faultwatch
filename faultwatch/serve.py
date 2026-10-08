@@ -155,5 +155,20 @@ class Scorer:
                 "retrain_recommended": bool(reasons), "reasons": reasons}
 
 
+POLICY_KEYS = ("safety", "copilot")   # engineering policy, editable without retraining
+
+
 def load_all(root: Path | str = ".") -> dict[str, Scorer]:
-    return {p.stem: Scorer.load(p) for p in sorted((Path(root) / MODELS_DIR).glob("*.joblib"))}
+    """Every trained bundle under models/. The FMECA (`safety`) and copilot
+    vocabulary are taken from the current configs/*.yaml, so a safety engineer
+    can change a severity or redundancy without retraining the model."""
+    import yaml
+    scorers = {p.stem: Scorer.load(p) for p in sorted((Path(root) / MODELS_DIR).glob("*.joblib"))}
+    for f in sorted((Path(root) / "configs").glob("*.yaml")):
+        cfg = yaml.safe_load(f.read_text()) or {}
+        s = scorers.get(cfg.get("name"))
+        if s is not None:
+            for k in POLICY_KEYS:
+                if k in cfg:
+                    s.cfg[k] = cfg[k]
+    return scorers

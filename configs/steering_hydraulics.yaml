@@ -44,4 +44,11 @@ safety:
     valve:       {effect: loss_of_steering, severity: 4, note: "control valve lag -> rudder overshoot or no response"}
     accumulator: {effect: loss_of_steering, severity: 3, note: "lost pre-charge -> no stored energy for peak demand"}
     cooler:      {effect: fire_risk,        severity: 3, note: "oil overheating -> seal failure, hot-oil leak near hot surfaces"}
+
+copilot:
+  system_terms: steering gear hydraulic power unit
+  sensor_terms: {PS1_mean: hydraulic system pressure, PS1_std: pressure fluctuation, PS2_mean: pump discharge pressure,
+                 PS3_mean: return line pressure, EPS1_mean: pump motor power, FS1_mean: hydraulic oil flow,
+                 FS2_mean: cooling oil flow, TS1_mean: hydraulic oil temperature, TS2_mean: oil tank temperature,
+                 VS1_mean: pump vibration}
 seed: 42

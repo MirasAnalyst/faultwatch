@@ -18,15 +18,17 @@ def main():
     p.add_argument("--out", default="reports")
     p.add_argument("--mlflow", action="store_true", help="log runs and register models in MLflow")
     args = p.parse_args()
-    for c in args.configs:
-        cfg = load_config(c)
+    # scenarios read other assets' reports: power_plant needs the C-MAPSS report, rollout the power plant's
+    order = {"power_plant": 1, "rollout": 2}
+    cfgs = sorted((load_config(c) for c in args.configs), key=lambda c: order.get(c["experiment"], 0))
+    for cfg in cfgs:
         out = Path(args.out) / cfg["name"]
         out.mkdir(parents=True, exist_ok=True)
         print(f"== {cfg['name']} ({cfg['experiment']})")
         metrics = EXPERIMENTS[cfg["experiment"]](cfg, out)
         print(json.dumps(metrics, indent=2)[:4000])
         print(f"-> {out}/")
-        if args.mlflow:
+        if args.mlflow and cfg["experiment"] not in order:     # scenarios have no model to register
             from faultwatch.tracking import log_run
             bundle = Path(cfg["_root"]) / MODELS_DIR / f"{cfg['name']}.joblib"
             print(f"-> MLflow run {log_run(cfg, metrics, out, bundle)}")

@@ -68,6 +68,10 @@ def run(cfg: dict, out: Path) -> dict:
     df["tier"] = np.where(df.critical, "critical", np.where(normal_wear, "normal_wear", "degraded"))
 
     folds = list(GroupKFold(n_splits=cfg.get("folds", 5)).split(X, groups=group))
+    # serving models leave out ~15% of segments so the dashboard / API demo is truly unseen
+    rng = np.random.default_rng(seed)
+    segs = group.unique()
+    demo_seg = group.isin(rng.choice(segs, max(1, int(0.15 * len(segs))), replace=False)).to_numpy()
 
     # ---- 1. condition grade per component (out-of-fold) ----------------------
     grading, p_crit, pred_grade, final, selections, shap_top = {}, {}, {}, {}, {}, {}
@@ -94,7 +98,7 @@ def run(cfg: dict, out: Path) -> dict:
         }
         pd.DataFrame(cm, index=[f"true_{g}" for g in order], columns=[f"pred_{g}" for g in order]) \
             .to_csv(out / f"confusion_{c}.csv")
-        final[c] = make_classifier(kind, seed).fit(X, y)
+        final[c] = make_classifier(kind, seed).fit(X[~demo_seg], y[~demo_seg])
         shap_top[c] = shap_importance(final[c], X, seed=seed).head(5).round(4).to_dict()
         if sel is not None:
             selections[c] = as_metrics(sel, kind)
@@ -174,12 +178,13 @@ def run(cfg: dict, out: Path) -> dict:
         metrics["model_selection"] = selections
     (out / "metrics.json").write_text(json.dumps(metrics, indent=2))
 
-    # ---- 4. serving bundle (models refit on all cycles) ----------------------
-    ref = df[normal_wear]
+    # ---- 4. serving bundle (refit on all cycles except the held-out demo segments)
+    ref = df[normal_wear & ~demo_seg]
     norm = RegimeNormalizer(det_feats, []).fit(ref)
     det = HealthDetector(hd.get("method", "mahalanobis"), hd.get("quantile", 0.99), 1, seed,
                          hd.get("calibration", "random")).fit(norm.transform(ref))
-    demo_rows = preds.groupby("tier", group_keys=False).apply(
+    held = preds[demo_seg]
+    demo_rows = held.groupby("tier", group_keys=False).apply(
         lambda g: g.sample(min(len(g), 80), random_state=seed)).index
     demo = df.loc[demo_rows, ["cycle", "segment", "tier"] + feats + [s["column"] for s in comps.values()]]
     save_bundle({**cfg, "sensors": det_feats}, root, normalizer=norm, detector=det,

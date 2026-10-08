@@ -36,4 +36,10 @@ safety:
     inner_race: {effect: loss_of_propulsion, severity: 3, note: "bearing spall -> seizure, pod out of service"}
     outer_race: {effect: loss_of_propulsion, severity: 3, note: "bearing spall -> seizure, pod out of service"}
     ball:       {effect: loss_of_propulsion, severity: 3, note: "rolling-element damage -> overheating, seizure"}
+
+copilot:
+  system_terms: propulsion electric motor rolling-element bearing
+  sensor_terms: {rms: vibration level, kurtosis: impulsive vibration, crest: vibration crest factor,
+                 env_bpfi: inner race defect frequency, env_bpfo: outer race defect frequency,
+                 env_bsf: ball spin defect frequency}
 seed: 42

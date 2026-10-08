@@ -36,4 +36,7 @@ safety:
   required: 1
   failure_modes:
     degradation: {effect: loss_of_redundancy, severity: 2, note: "component overheating ahead of failure; generator out of service"}
+
+copilot:
+  system_terms: generator and gearbox of rotating generating plant
 seed: 42

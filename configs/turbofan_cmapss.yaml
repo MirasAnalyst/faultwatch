@@ -46,4 +46,11 @@ safety:
   required: 2
   failure_modes:
     degradation: {effect: blackout, severity: 4, note: "HPC degradation -> generator set trips; with a second unit down, blackout"}
+
+copilot:
+  system_terms: gas turbine generator set
+  sensor_terms: {s2: compressor inlet temperature, s3: compressor outlet temperature, s4: turbine exhaust temperature,
+                 s7: compressor outlet pressure, s8: fan speed, s9: core speed, s11: compressor static pressure,
+                 s12: fuel flow ratio, s13: corrected fan speed, s14: corrected core speed, s15: bypass ratio,
+                 s17: bleed enthalpy, s20: turbine cooling air flow, s21: turbine cooling air flow}
 seed: 42

@@ -254,32 +254,32 @@
   },
   "top_shap_features": {
     "cooler": {
-      "TS2_std": 1.1101,
-      "TS4_min": 0.8111,
-      "PS2_mean": 0.5932,
-      "TS1_std": 0.5321,
-      "PS6_end": 0.4779
+      "TS2_std": 1.1223,
+      "PS2_mean": 0.8143,
+      "PS6_end": 0.7909,
+      "TS4_end": 0.4846,
+      "VS1_mean": 0.3563
     },
     "valve": {
-      "PS2_slope": 1.9883,
-      "PS1_slope": 1.2383,
-      "PS2_std": 0.5333,
-      "FS1_max": 0.5201,
-      "FS1_slope": 0.3892
+      "PS2_slope": 1.9741,
+      "PS1_slope": 1.1918,
+      "FS1_max": 0.6185,
+      "PS2_std": 0.5554,
+      "FS1_slope": 0.3768
     },
     "pump_leak": {
-      "FS1_end": 2.9123,
-      "FS1_mean": 1.7687,
-      "EPS1_max": 0.4399,
-      "EPS1_start": 0.3174,
-      "EPS1_min": 0.2676
+      "FS1_end": 2.9343,
+      "FS1_mean": 1.7144,
+      "EPS1_max": 0.4569,
+      "EPS1_start": 0.375,
+      "EPS1_min": 0.3036
     },
     "accumulator": {
-      "PS1_start": 0.9067,
-      "PS3_std": 0.5563,
-      "FS2_mean": 0.5504,
-      "FS1_start": 0.4383,
-      "TS1_min": 0.2462
+      "PS1_start": 0.847,
+      "PS3_std": 0.5599,
+      "FS1_start": 0.4849,
+      "FS2_mean": 0.4128,
+      "FS1_slope": 0.2655
     }
   },
   "model_selection": {
@@ -291,25 +291,25 @@
           "model": "logistic",
           "cv_macro_f1": 0.9726,
           "cv_macro_f1_std": 0.0356,
-          "fit_seconds": 0.38
+          "fit_seconds": 0.3
         },
         {
           "model": "catboost",
           "cv_macro_f1": 0.941,
           "cv_macro_f1_std": 0.0774,
-          "fit_seconds": 3.76
+          "fit_seconds": 2.02
         },
         {
           "model": "gbm",
           "cv_macro_f1": 0.9255,
           "cv_macro_f1_std": 0.0903,
-          "fit_seconds": 6.97
+          "fit_seconds": 4.13
         },
         {
           "model": "xgb",
           "cv_macro_f1": 0.8784,
           "cv_macro_f1_std": 0.1425,
-          "fit_seconds": 1.0
+          "fit_seconds": 0.64
         }
       ]
     },
@@ -321,25 +321,25 @@
           "model": "xgb",
           "cv_macro_f1": 0.9114,
           "cv_macro_f1_std": 0.0237,
-          "fit_seconds": 3.67
+          "fit_seconds": 2.39
         },
         {
           "model": "gbm",
           "cv_macro_f1": 0.9065,
           "cv_macro_f1_std": 0.0239,
-          "fit_seconds": 10.49
+          "fit_seconds": 6.09
         },
         {
           "model": "catboost",
           "cv_macro_f1": 0.8927,
           "cv_macro_f1_std": 0.0183,
-          "fit_seconds": 4.17
+          "fit_seconds": 3.42
         },
         {
           "model": "logistic",
           "cv_macro_f1": 0.7832,
           "cv_macro_f1_std": 0.0891,
-          "fit_seconds": 1.05
+          "fit_seconds": 0.96
         }
       ]
     },
@@ -351,25 +351,25 @@
           "model": "xgb",
           "cv_macro_f1": 0.9975,
           "cv_macro_f1_std": 0.0027,
-          "fit_seconds": 1.7
+          "fit_seconds": 1.16
         },
         {
           "model": "gbm",
           "cv_macro_f1": 0.997,
           "cv_macro_f1_std": 0.0046,
-          "fit_seconds": 7.83
+          "fit_seconds": 6.07
         },
         {
           "model": "catboost",
           "cv_macro_f1": 0.997,
           "cv_macro_f1_std": 0.0029,
-          "fit_seconds": 3.34
+          "fit_seconds": 3.7
         },
         {
           "model": "logistic",
           "cv_macro_f1": 0.8967,
           "cv_macro_f1_std": 0.0799,
-          "fit_seconds": 1.2
+          "fit_seconds": 0.85
         }
       ]
     },
@@ -381,25 +381,25 @@
           "model": "gbm",
           "cv_macro_f1": 0.8588,
           "cv_macro_f1_std": 0.0864,
-          "fit_seconds": 11.05
+          "fit_seconds": 6.66
         },
         {
           "model": "xgb",
           "cv_macro_f1": 0.8448,
           "cv_macro_f1_std": 0.0911,
-          "fit_seconds": 2.39
+          "fit_seconds": 2.62
         },
         {
           "model": "catboost",
           "cv_macro_f1": 0.8406,
           "cv_macro_f1_std": 0.0947,
-          "fit_seconds": 4.22
+          "fit_seconds": 4.99
         },
         {
           "model": "logistic",
           "cv_macro_f1": 0.4662,
           "cv_macro_f1_std": 0.0712,
-          "fit_seconds": 0.83
+          "fit_seconds": 0.9
         }
       ]
     }

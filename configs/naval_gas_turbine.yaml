@@ -52,3 +52,10 @@ safety:
     compressor: {effect: loss_of_propulsion, severity: 3, note: "compressor fouling/decay -> power derate, surge risk"}
     turbine:    {effect: loss_of_propulsion, severity: 3, note: "turbine decay -> high exhaust temp, trip on overtemperature"}
     combined:   {effect: loss_of_propulsion, severity: 4, note: "compressor + turbine decay -> trip likely under load"}
+
+copilot:
+  system_terms: marine gas turbine propulsion engine (LM2500-class)
+  sensor_terms: {hpt_exit_temp: turbine exhaust temperature, comp_out_press: compressor discharge pressure,
+                 comp_out_temp: compressor outlet temperature, gt_rpm: gas turbine speed, gg_rpm: gas generator speed,
+                 fuel_flow: fuel flow, gt_torque: turbine torque, hpt_exit_press: turbine exit pressure,
+                 exhaust_press: exhaust pressure, turbine_inj_ctrl: fuel injection control}
