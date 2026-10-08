@@ -62,7 +62,7 @@ def alert_to_question(alert: dict, cfg: dict | None = None) -> str:
     terms = cfg.get("copilot", {}).get("sensor_terms", {})
     system = cfg.get("copilot", {}).get("system_terms", cfg.get("short_name", alert.get("asset_name", "machinery")))
     sensors = [terms.get(s, s.replace("_", " ")) for s in (alert.get("top_sensors") or {})]
-    parts = [f"{system}:"]
+    parts = []
     if alert.get("diagnosis") or alert.get("component"):
         parts.append(f"{alert.get('diagnosis') or alert.get('component')} fault suspected".replace("_", " "))
     if sensors:
@@ -71,7 +71,8 @@ def alert_to_question(alert: dict, cfg: dict | None = None) -> str:
         parts.append(f"risk of {EFFECTS.get(alert['effect'], alert['effect']).lower()}")
     if alert.get("note"):
         parts.append(alert["note"])
-    return "; ".join(parts) + ". What caused similar failures, what should be checked, and which barriers failed?"
+    return (f"{system}: " + "; ".join(parts) +
+            ". What caused similar failures, what should be checked, and which barriers failed?")
 
 
 class Copilot:
