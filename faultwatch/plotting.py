@@ -1,5 +1,6 @@
 """Shared chart styling (thin marks, recessive grid, fixed categorical order)."""
 import matplotlib
+
 matplotlib.use("Agg")
 
 SURFACE = "#fcfcfb"

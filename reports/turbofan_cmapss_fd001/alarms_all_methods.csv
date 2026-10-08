@@ -1,0 +1,301 @@
+asset,life,alarm_at,lead,false_early,missed,method
+16,209,194.0,15.0,False,False,Fixed s4 high alarm
+17,276,268.0,8.0,False,False,Fixed s4 high alarm
+25,230,211.0,19.0,False,False,Fixed s4 high alarm
+26,199,191.0,8.0,False,False,Fixed s4 high alarm
+28,165,159.0,6.0,False,False,Fixed s4 high alarm
+31,234,221.0,13.0,False,False,Fixed s4 high alarm
+37,170,162.0,8.0,False,False,Fixed s4 high alarm
+39,128,118.0,10.0,False,False,Fixed s4 high alarm
+44,192,182.0,10.0,False,False,Fixed s4 high alarm
+49,215,195.0,20.0,False,False,Fixed s4 high alarm
+55,193,181.0,12.0,False,False,Fixed s4 high alarm
+62,180,166.0,14.0,False,False,Fixed s4 high alarm
+66,202,173.0,29.0,False,False,Fixed s4 high alarm
+69,362,330.0,32.0,False,False,Fixed s4 high alarm
+73,213,178.0,35.0,False,False,Fixed s4 high alarm
+77,154,146.0,8.0,False,False,Fixed s4 high alarm
+80,185,176.0,9.0,False,False,Fixed s4 high alarm
+93,155,151.0,4.0,False,False,Fixed s4 high alarm
+94,258,237.0,21.0,False,False,Fixed s4 high alarm
+100,200,172.0,28.0,False,False,Fixed s4 high alarm
+11,240,,,False,True,Fixed s4 high alarm
+12,170,161.0,9.0,False,False,Fixed s4 high alarm
+14,180,156.0,24.0,False,False,Fixed s4 high alarm
+18,195,190.0,5.0,False,False,Fixed s4 high alarm
+19,158,139.0,19.0,False,False,Fixed s4 high alarm
+24,147,146.0,1.0,False,False,Fixed s4 high alarm
+29,163,146.0,17.0,False,False,Fixed s4 high alarm
+40,188,168.0,20.0,False,False,Fixed s4 high alarm
+41,216,211.0,5.0,False,False,Fixed s4 high alarm
+43,207,194.0,13.0,False,False,Fixed s4 high alarm
+48,231,,,False,True,Fixed s4 high alarm
+53,195,193.0,2.0,False,False,Fixed s4 high alarm
+58,147,140.0,7.0,False,False,Fixed s4 high alarm
+76,210,201.0,9.0,False,False,Fixed s4 high alarm
+79,199,189.0,10.0,False,False,Fixed s4 high alarm
+84,267,253.0,14.0,False,False,Fixed s4 high alarm
+85,188,185.0,3.0,False,False,Fixed s4 high alarm
+86,278,247.0,31.0,False,False,Fixed s4 high alarm
+88,213,199.0,14.0,False,False,Fixed s4 high alarm
+92,341,321.0,20.0,False,False,Fixed s4 high alarm
+1,192,177.0,15.0,False,False,Fixed s4 high alarm
+3,179,178.0,1.0,False,False,Fixed s4 high alarm
+7,259,248.0,11.0,False,False,Fixed s4 high alarm
+10,222,217.0,5.0,False,False,Fixed s4 high alarm
+13,163,152.0,11.0,False,False,Fixed s4 high alarm
+21,195,189.0,6.0,False,False,Fixed s4 high alarm
+22,202,187.0,15.0,False,False,Fixed s4 high alarm
+33,200,194.0,6.0,False,False,Fixed s4 high alarm
+42,196,181.0,15.0,False,False,Fixed s4 high alarm
+47,214,206.0,8.0,False,False,Fixed s4 high alarm
+51,213,,,False,True,Fixed s4 high alarm
+60,172,164.0,8.0,False,False,Fixed s4 high alarm
+61,185,,,False,True,Fixed s4 high alarm
+64,283,261.0,22.0,False,False,Fixed s4 high alarm
+65,153,148.0,5.0,False,False,Fixed s4 high alarm
+78,231,229.0,2.0,False,False,Fixed s4 high alarm
+81,240,219.0,21.0,False,False,Fixed s4 high alarm
+91,135,109.0,26.0,False,False,Fixed s4 high alarm
+96,336,323.0,13.0,False,False,Fixed s4 high alarm
+98,156,154.0,2.0,False,False,Fixed s4 high alarm
+5,269,257.0,12.0,False,False,Fixed s4 high alarm
+8,150,145.0,5.0,False,False,Fixed s4 high alarm
+15,207,206.0,1.0,False,False,Fixed s4 high alarm
+23,168,150.0,18.0,False,False,Fixed s4 high alarm
+27,156,147.0,9.0,False,False,Fixed s4 high alarm
+32,191,180.0,11.0,False,False,Fixed s4 high alarm
+34,195,187.0,8.0,False,False,Fixed s4 high alarm
+35,181,166.0,15.0,False,False,Fixed s4 high alarm
+38,194,180.0,14.0,False,False,Fixed s4 high alarm
+46,256,242.0,14.0,False,False,Fixed s4 high alarm
+52,213,200.0,13.0,False,False,Fixed s4 high alarm
+59,231,229.0,2.0,False,False,Fixed s4 high alarm
+67,313,304.0,9.0,False,False,Fixed s4 high alarm
+68,199,192.0,7.0,False,False,Fixed s4 high alarm
+70,137,122.0,15.0,False,False,Fixed s4 high alarm
+74,166,162.0,4.0,False,False,Fixed s4 high alarm
+82,214,202.0,12.0,False,False,Fixed s4 high alarm
+89,217,200.0,17.0,False,False,Fixed s4 high alarm
+95,283,274.0,9.0,False,False,Fixed s4 high alarm
+99,185,163.0,22.0,False,False,Fixed s4 high alarm
+2,287,278.0,9.0,False,False,Fixed s4 high alarm
+4,189,180.0,9.0,False,False,Fixed s4 high alarm
+6,188,167.0,21.0,False,False,Fixed s4 high alarm
+9,201,,,False,True,Fixed s4 high alarm
+20,234,230.0,4.0,False,False,Fixed s4 high alarm
+30,194,188.0,6.0,False,False,Fixed s4 high alarm
+36,158,137.0,21.0,False,False,Fixed s4 high alarm
+45,158,153.0,5.0,False,False,Fixed s4 high alarm
+50,198,192.0,6.0,False,False,Fixed s4 high alarm
+54,257,242.0,15.0,False,False,Fixed s4 high alarm
+56,275,264.0,11.0,False,False,Fixed s4 high alarm
+57,137,135.0,2.0,False,False,Fixed s4 high alarm
+63,174,171.0,3.0,False,False,Fixed s4 high alarm
+71,208,204.0,4.0,False,False,Fixed s4 high alarm
+72,213,202.0,11.0,False,False,Fixed s4 high alarm
+75,229,208.0,21.0,False,False,Fixed s4 high alarm
+83,293,282.0,11.0,False,False,Fixed s4 high alarm
+87,178,165.0,13.0,False,False,Fixed s4 high alarm
+90,154,,,False,True,Fixed s4 high alarm
+97,202,199.0,3.0,False,False,Fixed s4 high alarm
+16,209,,,False,True,"Multivariate, fleet baseline"
+17,276,226.0,50.0,False,False,"Multivariate, fleet baseline"
+25,230,207.0,23.0,False,False,"Multivariate, fleet baseline"
+26,199,174.0,25.0,False,False,"Multivariate, fleet baseline"
+28,165,,,False,True,"Multivariate, fleet baseline"
+31,234,,,False,True,"Multivariate, fleet baseline"
+37,170,,,False,True,"Multivariate, fleet baseline"
+39,128,,,False,True,"Multivariate, fleet baseline"
+44,192,,,False,True,"Multivariate, fleet baseline"
+49,215,,,False,True,"Multivariate, fleet baseline"
+55,193,166.0,27.0,False,False,"Multivariate, fleet baseline"
+62,180,,,False,True,"Multivariate, fleet baseline"
+66,202,,,False,True,"Multivariate, fleet baseline"
+69,362,,,False,True,"Multivariate, fleet baseline"
+73,213,,,False,True,"Multivariate, fleet baseline"
+77,154,,,False,True,"Multivariate, fleet baseline"
+80,185,159.0,26.0,False,False,"Multivariate, fleet baseline"
+93,155,,,False,True,"Multivariate, fleet baseline"
+94,258,226.0,32.0,False,False,"Multivariate, fleet baseline"
+100,200,,,False,True,"Multivariate, fleet baseline"
+11,240,207.0,33.0,False,False,"Multivariate, fleet baseline"
+12,170,,,False,True,"Multivariate, fleet baseline"
+14,180,156.0,24.0,False,False,"Multivariate, fleet baseline"
+18,195,162.0,33.0,False,False,"Multivariate, fleet baseline"
+19,158,,,False,True,"Multivariate, fleet baseline"
+24,147,,,False,True,"Multivariate, fleet baseline"
+29,163,,,False,True,"Multivariate, fleet baseline"
+40,188,160.0,28.0,False,False,"Multivariate, fleet baseline"
+41,216,186.0,30.0,False,False,"Multivariate, fleet baseline"
+43,207,,,False,True,"Multivariate, fleet baseline"
+48,231,181.0,50.0,False,False,"Multivariate, fleet baseline"
+53,195,164.0,31.0,False,False,"Multivariate, fleet baseline"
+58,147,,,False,True,"Multivariate, fleet baseline"
+76,210,,,False,True,"Multivariate, fleet baseline"
+79,199,191.0,8.0,False,False,"Multivariate, fleet baseline"
+84,267,,,False,True,"Multivariate, fleet baseline"
+85,188,,,False,True,"Multivariate, fleet baseline"
+86,278,276.0,2.0,False,False,"Multivariate, fleet baseline"
+88,213,180.0,33.0,False,False,"Multivariate, fleet baseline"
+92,341,294.0,47.0,False,False,"Multivariate, fleet baseline"
+1,192,,,False,True,"Multivariate, fleet baseline"
+3,179,152.0,27.0,False,False,"Multivariate, fleet baseline"
+7,259,,,False,True,"Multivariate, fleet baseline"
+10,222,212.0,10.0,False,False,"Multivariate, fleet baseline"
+13,163,143.0,20.0,False,False,"Multivariate, fleet baseline"
+21,195,173.0,22.0,False,False,"Multivariate, fleet baseline"
+22,202,,,False,True,"Multivariate, fleet baseline"
+33,200,,,False,True,"Multivariate, fleet baseline"
+42,196,,,False,True,"Multivariate, fleet baseline"
+47,214,200.0,14.0,False,False,"Multivariate, fleet baseline"
+51,213,169.0,44.0,False,False,"Multivariate, fleet baseline"
+60,172,156.0,16.0,False,False,"Multivariate, fleet baseline"
+61,185,,,False,True,"Multivariate, fleet baseline"
+64,283,263.0,20.0,False,False,"Multivariate, fleet baseline"
+65,153,,,False,True,"Multivariate, fleet baseline"
+78,231,229.0,2.0,False,False,"Multivariate, fleet baseline"
+81,240,,,False,True,"Multivariate, fleet baseline"
+91,135,,,False,True,"Multivariate, fleet baseline"
+96,336,,,False,True,"Multivariate, fleet baseline"
+98,156,,,False,True,"Multivariate, fleet baseline"
+5,269,222.0,47.0,False,False,"Multivariate, fleet baseline"
+8,150,,,False,True,"Multivariate, fleet baseline"
+15,207,,,False,True,"Multivariate, fleet baseline"
+23,168,,,False,True,"Multivariate, fleet baseline"
+27,156,138.0,18.0,False,False,"Multivariate, fleet baseline"
+32,191,186.0,5.0,False,False,"Multivariate, fleet baseline"
+34,195,162.0,33.0,False,False,"Multivariate, fleet baseline"
+35,181,174.0,7.0,False,False,"Multivariate, fleet baseline"
+38,194,168.0,26.0,False,False,"Multivariate, fleet baseline"
+46,256,,,False,True,"Multivariate, fleet baseline"
+52,213,196.0,17.0,False,False,"Multivariate, fleet baseline"
+59,231,,,False,True,"Multivariate, fleet baseline"
+67,313,,,False,True,"Multivariate, fleet baseline"
+68,199,164.0,35.0,False,False,"Multivariate, fleet baseline"
+70,137,133.0,4.0,False,False,"Multivariate, fleet baseline"
+74,166,,,False,True,"Multivariate, fleet baseline"
+82,214,174.0,40.0,False,False,"Multivariate, fleet baseline"
+89,217,,,False,True,"Multivariate, fleet baseline"
+95,283,254.0,29.0,False,False,"Multivariate, fleet baseline"
+99,185,,,False,True,"Multivariate, fleet baseline"
+2,287,276.0,11.0,False,False,"Multivariate, fleet baseline"
+4,189,161.0,28.0,False,False,"Multivariate, fleet baseline"
+6,188,,,False,True,"Multivariate, fleet baseline"
+9,201,159.0,42.0,False,False,"Multivariate, fleet baseline"
+20,234,,,False,True,"Multivariate, fleet baseline"
+30,194,,,False,True,"Multivariate, fleet baseline"
+36,158,,,False,True,"Multivariate, fleet baseline"
+45,158,152.0,6.0,False,False,"Multivariate, fleet baseline"
+50,198,173.0,25.0,False,False,"Multivariate, fleet baseline"
+54,257,216.0,41.0,False,False,"Multivariate, fleet baseline"
+56,275,231.0,44.0,False,False,"Multivariate, fleet baseline"
+57,137,,,False,True,"Multivariate, fleet baseline"
+63,174,145.0,29.0,False,False,"Multivariate, fleet baseline"
+71,208,182.0,26.0,False,False,"Multivariate, fleet baseline"
+72,213,,,False,True,"Multivariate, fleet baseline"
+75,229,,,False,True,"Multivariate, fleet baseline"
+83,293,,,False,True,"Multivariate, fleet baseline"
+87,178,,,False,True,"Multivariate, fleet baseline"
+90,154,,,False,True,"Multivariate, fleet baseline"
+97,202,169.0,33.0,False,False,"Multivariate, fleet baseline"
+16,209,140.0,69.0,False,False,FaultWatch (per-engine baseline)
+17,276,143.0,133.0,False,False,FaultWatch (per-engine baseline)
+25,230,138.0,92.0,False,False,FaultWatch (per-engine baseline)
+26,199,114.0,85.0,False,False,FaultWatch (per-engine baseline)
+28,165,97.0,68.0,False,False,FaultWatch (per-engine baseline)
+31,234,143.0,91.0,False,False,FaultWatch (per-engine baseline)
+37,170,106.0,64.0,False,False,FaultWatch (per-engine baseline)
+39,128,87.0,41.0,False,False,FaultWatch (per-engine baseline)
+44,192,124.0,68.0,False,False,FaultWatch (per-engine baseline)
+49,215,139.0,76.0,False,False,FaultWatch (per-engine baseline)
+55,193,113.0,80.0,False,False,FaultWatch (per-engine baseline)
+62,180,122.0,58.0,False,False,FaultWatch (per-engine baseline)
+66,202,145.0,57.0,False,False,FaultWatch (per-engine baseline)
+69,362,208.0,154.0,False,False,FaultWatch (per-engine baseline)
+73,213,144.0,69.0,False,False,FaultWatch (per-engine baseline)
+77,154,101.0,53.0,False,False,FaultWatch (per-engine baseline)
+80,185,110.0,75.0,False,False,FaultWatch (per-engine baseline)
+93,155,95.0,60.0,False,False,FaultWatch (per-engine baseline)
+94,258,149.0,109.0,False,False,FaultWatch (per-engine baseline)
+100,200,129.0,71.0,False,False,FaultWatch (per-engine baseline)
+11,240,140.0,100.0,False,False,FaultWatch (per-engine baseline)
+12,170,115.0,55.0,False,False,FaultWatch (per-engine baseline)
+14,180,105.0,75.0,False,False,FaultWatch (per-engine baseline)
+18,195,108.0,87.0,False,False,FaultWatch (per-engine baseline)
+19,158,100.0,58.0,False,False,FaultWatch (per-engine baseline)
+24,147,92.0,55.0,False,False,FaultWatch (per-engine baseline)
+29,163,100.0,63.0,False,False,FaultWatch (per-engine baseline)
+40,188,109.0,79.0,False,False,FaultWatch (per-engine baseline)
+41,216,124.0,92.0,False,False,FaultWatch (per-engine baseline)
+43,207,117.0,90.0,False,False,FaultWatch (per-engine baseline)
+48,231,128.0,103.0,False,False,FaultWatch (per-engine baseline)
+53,195,111.0,84.0,False,False,FaultWatch (per-engine baseline)
+58,147,89.0,58.0,False,False,FaultWatch (per-engine baseline)
+76,210,136.0,74.0,False,False,FaultWatch (per-engine baseline)
+79,199,111.0,88.0,False,False,FaultWatch (per-engine baseline)
+84,267,162.0,105.0,False,False,FaultWatch (per-engine baseline)
+85,188,120.0,68.0,False,False,FaultWatch (per-engine baseline)
+86,278,172.0,106.0,False,False,FaultWatch (per-engine baseline)
+88,213,121.0,92.0,False,False,FaultWatch (per-engine baseline)
+92,341,189.0,152.0,False,False,FaultWatch (per-engine baseline)
+1,192,114.0,78.0,False,False,FaultWatch (per-engine baseline)
+3,179,89.0,90.0,False,False,FaultWatch (per-engine baseline)
+7,259,143.0,116.0,False,False,FaultWatch (per-engine baseline)
+10,222,120.0,102.0,False,False,FaultWatch (per-engine baseline)
+13,163,98.0,65.0,False,False,FaultWatch (per-engine baseline)
+21,195,100.0,95.0,False,False,FaultWatch (per-engine baseline)
+22,202,137.0,65.0,False,False,FaultWatch (per-engine baseline)
+33,200,116.0,84.0,False,False,FaultWatch (per-engine baseline)
+42,196,115.0,81.0,False,False,FaultWatch (per-engine baseline)
+47,214,114.0,100.0,False,False,FaultWatch (per-engine baseline)
+51,213,112.0,101.0,False,False,FaultWatch (per-engine baseline)
+60,172,102.0,70.0,False,False,FaultWatch (per-engine baseline)
+61,185,109.0,76.0,False,False,FaultWatch (per-engine baseline)
+64,283,160.0,123.0,False,False,FaultWatch (per-engine baseline)
+65,153,98.0,55.0,False,False,FaultWatch (per-engine baseline)
+78,231,122.0,109.0,False,False,FaultWatch (per-engine baseline)
+81,240,134.0,106.0,False,False,FaultWatch (per-engine baseline)
+91,135,86.0,49.0,False,False,FaultWatch (per-engine baseline)
+96,336,186.0,150.0,False,False,FaultWatch (per-engine baseline)
+98,156,89.0,67.0,False,False,FaultWatch (per-engine baseline)
+5,269,132.0,137.0,False,False,FaultWatch (per-engine baseline)
+8,150,90.0,60.0,False,False,FaultWatch (per-engine baseline)
+15,207,102.0,105.0,False,False,FaultWatch (per-engine baseline)
+23,168,107.0,61.0,False,False,FaultWatch (per-engine baseline)
+27,156,94.0,62.0,False,False,FaultWatch (per-engine baseline)
+32,191,114.0,77.0,False,False,FaultWatch (per-engine baseline)
+34,195,108.0,87.0,False,False,FaultWatch (per-engine baseline)
+35,181,107.0,74.0,False,False,FaultWatch (per-engine baseline)
+38,194,109.0,85.0,False,False,FaultWatch (per-engine baseline)
+46,256,150.0,106.0,False,False,FaultWatch (per-engine baseline)
+52,213,113.0,100.0,False,False,FaultWatch (per-engine baseline)
+59,231,129.0,102.0,False,False,FaultWatch (per-engine baseline)
+67,313,182.0,131.0,False,False,FaultWatch (per-engine baseline)
+68,199,109.0,90.0,False,False,FaultWatch (per-engine baseline)
+70,137,86.0,51.0,False,False,FaultWatch (per-engine baseline)
+74,166,100.0,66.0,False,False,FaultWatch (per-engine baseline)
+82,214,115.0,99.0,False,False,FaultWatch (per-engine baseline)
+89,217,127.0,90.0,False,False,FaultWatch (per-engine baseline)
+95,283,144.0,139.0,False,False,FaultWatch (per-engine baseline)
+99,185,109.0,76.0,False,False,FaultWatch (per-engine baseline)
+2,287,156.0,131.0,False,False,FaultWatch (per-engine baseline)
+4,189,106.0,83.0,False,False,FaultWatch (per-engine baseline)
+6,188,123.0,65.0,False,False,FaultWatch (per-engine baseline)
+9,201,103.0,98.0,False,False,FaultWatch (per-engine baseline)
+20,234,143.0,91.0,False,False,FaultWatch (per-engine baseline)
+30,194,110.0,84.0,False,False,FaultWatch (per-engine baseline)
+36,158,98.0,60.0,False,False,FaultWatch (per-engine baseline)
+45,158,92.0,66.0,False,False,FaultWatch (per-engine baseline)
+50,198,102.0,96.0,False,False,FaultWatch (per-engine baseline)
+54,257,138.0,119.0,False,False,FaultWatch (per-engine baseline)
+56,275,157.0,118.0,False,False,FaultWatch (per-engine baseline)
+57,137,84.0,53.0,False,False,FaultWatch (per-engine baseline)
+63,174,101.0,73.0,False,False,FaultWatch (per-engine baseline)
+71,208,109.0,99.0,False,False,FaultWatch (per-engine baseline)
+72,213,132.0,81.0,False,False,FaultWatch (per-engine baseline)
+75,229,134.0,95.0,False,False,FaultWatch (per-engine baseline)
+83,293,153.0,140.0,False,False,FaultWatch (per-engine baseline)
+87,178,110.0,68.0,False,False,FaultWatch (per-engine baseline)
+90,154,88.0,66.0,False,False,FaultWatch (per-engine baseline)
+97,202,109.0,93.0,False,False,FaultWatch (per-engine baseline)

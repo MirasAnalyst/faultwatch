@@ -17,11 +17,13 @@ from sklearn.model_selection import GroupKFold
 from ..anomaly import HealthDetector, first_alarm
 from ..data import LOADERS
 from ..explain import plot_importance, shap_importance
-from ..models import nasa_score, regressor, rul_features
+from ..models import make_regressor, nasa_score, rul_features
 from ..plotting import INK, INK_2, NEUTRAL, SERIES, style_axes
 from ..regime import RegimeNormalizer
-from ..schedule import evaluate_plan, plan_maintenance
+from ..schedule import evaluate_plan, plan_costs, plan_maintenance
+from ..selection import as_metrics, choose
 from ..serve import healthy_reference, save_bundle
+from ..stats import bootstrap_ci, mcnemar_exact, wilcoxon_paired
 
 
 def _normalizer(cfg, per_asset=None, smoothing=None):
@@ -79,7 +81,7 @@ def run(cfg: dict, out: Path) -> dict:
     tables = {k: [] for k in variants}
     oof_score = pd.Series(np.nan, index=train.index)
     oof_thr = {}
-    for fold, (fi, vi) in enumerate(GroupKFold(n_splits=5).split(train, groups=train[a])):
+    for fi, vi in GroupKFold(n_splits=5).split(train, groups=train[a]):
         fit, val = train.iloc[fi], train.iloc[vi]
         h = fit[healthy.iloc[fi].to_numpy()]
         for name, kw in variants.items():
@@ -100,6 +102,9 @@ def run(cfg: dict, out: Path) -> dict:
     tables = {k: pd.concat(v, ignore_index=True) for k, v in tables.items()}
     warn_rows = [_summarize(k, v) for k, v in tables.items()]
     tables["FaultWatch (per-engine baseline)"].to_csv(out / "alarms_per_engine.csv", index=False)
+    pd.concat([v.assign(method=k) for k, v in tables.items()]).to_csv(
+        out / "alarms_all_methods.csv", index=False)
+    warn_unc = _warning_uncertainty(tables, "FaultWatch (per-engine baseline)", cfg["seed"])
     _plot_health(train, oof_score, oof_thr, tables["FaultWatch (per-engine baseline)"], cfg,
                  out / "health_score_examples.png")
 
@@ -115,6 +120,9 @@ def run(cfg: dict, out: Path) -> dict:
     X_te = rul_features(Z_te, test, det, a, t, tw)
     cap = cfg["rul"]["cap"]
     y_tr = train["RUL"].clip(upper=cap)
+
+    kind, sel = choose("regressor", X_tr, y_tr, train[a], cfg, cfg["rul"].get("model", "gbm"))
+    regressor = lambda seed: make_regressor(kind, seed)
 
     # out-of-fold RUL error on training engines -> uncertainty used by the planner
     oof = np.zeros(len(train))
@@ -156,6 +164,10 @@ def run(cfg: dict, out: Path) -> dict:
     oracle = plan_maintenance(pd.DataFrame({"asset": pred.index, "rul_pred": truth.values}),
                               m["horizon"], m["capacity_per_day"], rul_uncertainty=0.5, **costs)
     no_plan = plan.assign(service_day=np.nan)
+    per_engine = pd.DataFrame({
+        "fw": plan_costs(plan, truth, m["horizon"], **costs)["cost"],
+        "rtf": plan_costs(no_plan, truth, m["horizon"], **costs)["cost"]})
+    saving = bootstrap_ci(per_engine, lambda d: d["rtf"].sum() - d["fw"].sum(), seed=cfg["seed"])
     maint = {
         "planning_horizon": m["horizon"],
         "engines_failing_in_horizon": int((truth <= m["horizon"]).sum()),
@@ -164,13 +176,19 @@ def run(cfg: dict, out: Path) -> dict:
         "run_to_failure": evaluate_plan(no_plan, truth, m["horizon"], **costs),
         "faultwatch_plan": evaluate_plan(plan, truth, m["horizon"], **costs),
         "perfect_foresight": evaluate_plan(oracle, truth, m["horizon"], **costs),
+        "saving_vs_run_to_failure": saving,
     }
+    rul_metrics["rmse_ci"] = bootstrap_ci(pd.DataFrame({"p": pred.values, "t": truth.values}),
+                                          lambda d: float(np.sqrt(np.mean((d.p - d.t) ** 2))),
+                                          seed=cfg["seed"])
 
     metrics = {"dataset": cfg["description"],
                "engines": {"train": int(train[a].nunique()), "test": int(test[a].nunique())},
                "early_warning": warn_rows, "rul": rul_metrics,
                "top_shap_features": imp.head(5).round(3).to_dict(),
-               "maintenance": maint}
+               "maintenance": maint, "uncertainty": warn_unc}
+    if sel is not None:
+        metrics["model_selection"] = as_metrics(sel, kind)
     (out / "metrics.json").write_text(json.dumps(metrics, indent=2))
 
     cols = list(dict.fromkeys([a, t] + cfg["regime_features"] + cfg["sensors"]))
@@ -182,6 +200,25 @@ def run(cfg: dict, out: Path) -> dict:
                 demo=demo.drop(columns="rul_at_end"), maintenance=m,
                 rul_uncertainty=cv_rmse_near)
     return metrics
+
+
+def _warning_uncertainty(tables, reference, seed):
+    """Engines are independent units: bootstrap them for CIs, and compare
+    methods engine by engine (McNemar on 'warned in time', Wilcoxon on lead)."""
+    ok = {k: (~v.false_early & ~v.missed).to_numpy() for k, v in tables.items()}
+    lead = {k: np.where(ok[k], v["lead"].astype(float), 0.0) for k, v in tables.items()}
+    out = {}
+    for k, v in tables.items():
+        d = pd.DataFrame({"ok": ok[k], "lead": v["lead"].astype(float)})
+        r = {"warned_in_time": bootstrap_ci(d, lambda x: x.ok.mean(), seed=seed),
+             "median_warning_cycles": bootstrap_ci(
+                 d, lambda x: x.loc[x.ok, "lead"].median() if x.ok.any() else np.nan, seed=seed)}
+        if k != reference:
+            r["vs_reference"] = {"reference": reference,
+                                 "warned_in_time": mcnemar_exact(ok[reference], ok[k]),
+                                 "lead_cycles_missed_as_zero": wilcoxon_paired(lead[reference], lead[k])}
+        out[k] = r
+    return out
 
 
 def _plot_health(train, score, thr, alarms, cfg, path):
@@ -219,7 +256,8 @@ def _plot_rul(pred, truth, path):
     lim = max(truth.max(), pred.max()) + 5
     ax.plot([0, lim], [0, lim], color=NEUTRAL, linestyle="--", linewidth=1.2)
     ax.text(lim * 0.62, lim * 0.55, "perfect prediction", color=INK_2, fontsize=9, rotation=38)
-    ax.set_xlim(0, lim); ax.set_ylim(0, lim)
+    ax.set_xlim(0, lim)
+    ax.set_ylim(0, lim)
     ax.set_xlabel("True remaining life (cycles)")
     ax.set_ylabel("Predicted remaining life (cycles)")
     ax.set_title("Remaining-life predictions, 100 unseen engines", loc="left", color=INK, fontsize=11)

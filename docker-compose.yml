@@ -1,0 +1,22 @@
+# Local stack: scoring API, operator dashboard and MLflow UI.
+#   python run.py configs/*.yaml --mlflow    # train first (writes models/ and mlflow.db)
+#   docker compose up
+services:
+  api:
+    build: .
+    ports: ["8000:8000"]
+    volumes: ["./models:/app/models", "./monitoring:/app/monitoring"]
+    environment:
+      - AZURE_OPENAI_ENDPOINT
+      - AZURE_OPENAI_API_KEY
+      - AZURE_OPENAI_DEPLOYMENT
+  dashboard:
+    build: .
+    command: ["streamlit", "run", "dashboard.py", "--server.port", "8501", "--server.address", "0.0.0.0"]
+    ports: ["8501:8501"]
+    volumes: ["./models:/app/models", "./reports:/app/reports", "./monitoring:/app/monitoring"]
+  mlflow:
+    image: ghcr.io/mlflow/mlflow:v2.14.1
+    command: ["mlflow", "ui", "--host", "0.0.0.0", "--backend-store-uri", "sqlite:////mlflow/mlflow.db"]
+    ports: ["5000:5000"]
+    volumes: ["./mlflow.db:/mlflow/mlflow.db", "./mlruns:/mlruns"]

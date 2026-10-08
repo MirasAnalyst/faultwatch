@@ -117,5 +117,71 @@
       "description": "Gearbox bearings damaged",
       "top_sensors_at_first_alarm": {}
     }
-  ]
+  ],
+  "uncertainty": {
+    "High-temperature limits (training max per sensor)": {
+      "detection": {
+        "estimate": 0.25,
+        "ci_low": 0.0,
+        "ci_high": 0.5,
+        "level": 0.95,
+        "units": 12
+      },
+      "false_alarm": {
+        "estimate": 0.2,
+        "ci_low": 0.0,
+        "ci_high": 0.5,
+        "level": 0.95,
+        "units": 10
+      },
+      "vs_reference": {
+        "a_only": 4,
+        "b_only": 2,
+        "both": 1,
+        "neither": 5,
+        "p_value": 0.6875,
+        "reference": "FaultWatch"
+      }
+    },
+    "Multivariate, not power-aware": {
+      "detection": {
+        "estimate": 0.25,
+        "ci_low": 0.0,
+        "ci_high": 0.5,
+        "level": 0.95,
+        "units": 12
+      },
+      "false_alarm": {
+        "estimate": 0.0,
+        "ci_low": 0.0,
+        "ci_high": 0.0,
+        "level": 0.95,
+        "units": 10
+      },
+      "vs_reference": {
+        "a_only": 2,
+        "b_only": 0,
+        "both": 3,
+        "neither": 7,
+        "p_value": 0.5,
+        "reference": "FaultWatch"
+      }
+    },
+    "FaultWatch": {
+      "detection": {
+        "estimate": 0.4166666666666667,
+        "ci_low": 0.16666666666666666,
+        "ci_high": 0.6666666666666666,
+        "level": 0.95,
+        "units": 12
+      },
+      "false_alarm": {
+        "estimate": 0.0,
+        "ci_low": 0.0,
+        "ci_high": 0.0,
+        "level": 0.95,
+        "units": 10
+      }
+    }
+  }
 }

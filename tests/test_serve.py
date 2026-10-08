@@ -2,15 +2,13 @@
 import importlib
 import sys
 
-import numpy as np
-import pandas as pd
 import pytest
 from fastapi.testclient import TestClient
+from test_core import _plant
 
 from faultwatch.anomaly import HealthDetector
 from faultwatch.regime import RegimeNormalizer
 from faultwatch.serve import Scorer, healthy_reference, save_bundle
-from test_core import _plant
 
 CFG = {"name": "toy_pump", "experiment": "steady_state", "dataset": "synthetic",
        "sensors": ["a", "b"], "regime_features": ["load"], "asset_id": None, "time": None}

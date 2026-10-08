@@ -73,5 +73,89 @@
         0.021
       ]
     }
+  },
+  "uncertainty": {
+    "Overall vibration (RMS) alarm": {
+      "detection": {
+        "estimate": 1.0,
+        "ci_low": 1.0,
+        "ci_high": 1.0,
+        "level": 0.95,
+        "units": 12
+      },
+      "false_alarm": {
+        "estimate": 0.0,
+        "ci_low": 0.0,
+        "ci_high": 0.0,
+        "level": 0.95,
+        "units": 4
+      },
+      "vs_reference": {
+        "mean_diff": 0.0,
+        "p_value": 1.0,
+        "units": 12,
+        "reference": "FaultWatch"
+      }
+    },
+    "High/low limits on every sensor": {
+      "detection": {
+        "estimate": 1.0,
+        "ci_low": 1.0,
+        "ci_high": 1.0,
+        "level": 0.95,
+        "units": 12
+      },
+      "false_alarm": {
+        "estimate": 0.22580645161290322,
+        "ci_low": 0.0,
+        "ci_high": 0.5714285714285714,
+        "level": 0.95,
+        "units": 4
+      },
+      "vs_reference": {
+        "mean_diff": 0.0,
+        "p_value": 1.0,
+        "units": 12,
+        "reference": "FaultWatch"
+      }
+    },
+    "Multivariate, not load-aware": {
+      "detection": {
+        "estimate": 1.0,
+        "ci_low": 1.0,
+        "ci_high": 1.0,
+        "level": 0.95,
+        "units": 12
+      },
+      "false_alarm": {
+        "estimate": 0.0,
+        "ci_low": 0.0,
+        "ci_high": 0.0,
+        "level": 0.95,
+        "units": 4
+      },
+      "vs_reference": {
+        "mean_diff": 0.0,
+        "p_value": 1.0,
+        "units": 12,
+        "reference": "FaultWatch"
+      }
+    },
+    "FaultWatch": {
+      "detection": {
+        "estimate": 1.0,
+        "ci_low": 1.0,
+        "ci_high": 1.0,
+        "level": 0.95,
+        "units": 12
+      },
+      "false_alarm": {
+        "estimate": 0.0967741935483871,
+        "ci_low": 0.0,
+        "ci_high": 0.23076923076923078,
+        "level": 0.95,
+        "units": 4
+      }
+    }
   }
 }

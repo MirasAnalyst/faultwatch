@@ -15,3 +15,10 @@ uvicorn>=0.29
 streamlit>=1.40
 altair>=5.0
 httpx>=0.27
+statsmodels>=0.14
+xgboost>=2.0
+catboost>=1.2
+rank-bm25>=0.2
+pypdf>=4.0
+# optional: openai / anthropic (LLM providers), sentence-transformers (dense retrieval),
+# pyspark (feature pipeline) - see pyproject.toml extras

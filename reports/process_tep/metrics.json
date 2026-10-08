@@ -104,5 +104,75 @@
     "z_xmeas_18": 0.2919,
     "z_xmeas_21": 0.2815,
     "z_xmeas_19": 0.2613
+  },
+  "uncertainty": {
+    "High/low limits on every sensor": {
+      "detection": {
+        "estimate": 0.8677976190476191,
+        "ci_low": 0.7962946428571428,
+        "ci_high": 0.9351800595238096,
+        "level": 0.95,
+        "units": 21
+      },
+      "false_alarm": {
+        "estimate": 0.3990740740740741,
+        "ci_low": 0.3374786931818182,
+        "ci_high": 0.44902673669763515,
+        "level": 0.95,
+        "units": 22
+      },
+      "vs_reference": {
+        "mean_diff": -0.1263095238095238,
+        "p_value": 0.00019998000199980003,
+        "units": 21,
+        "reference": "FaultWatch"
+      }
+    },
+    "FaultWatch": {
+      "detection": {
+        "estimate": 0.7414880952380952,
+        "ci_low": 0.6046845238095238,
+        "ci_high": 0.8652053571428572,
+        "level": 0.95,
+        "units": 21
+      },
+      "false_alarm": {
+        "estimate": 0.021296296296296296,
+        "ci_low": 0.013352272727272727,
+        "ci_high": 0.02870388454861111,
+        "level": 0.95,
+        "units": 22
+      }
+    }
+  },
+  "model_selection": {
+    "used": "gbm",
+    "winner_by_cv": "gbm",
+    "candidates": [
+      {
+        "model": "gbm",
+        "cv_macro_f1": 0.6701,
+        "cv_macro_f1_std": 0.0802,
+        "fit_seconds": 40.68
+      },
+      {
+        "model": "xgb",
+        "cv_macro_f1": 0.6534,
+        "cv_macro_f1_std": 0.0919,
+        "fit_seconds": 15.44
+      },
+      {
+        "model": "catboost",
+        "cv_macro_f1": 0.6245,
+        "cv_macro_f1_std": 0.0831,
+        "fit_seconds": 20.7
+      },
+      {
+        "model": "logistic",
+        "cv_macro_f1": 0.477,
+        "cv_macro_f1_std": 0.0361,
+        "fit_seconds": 0.78
+      }
+    ]
   }
 }

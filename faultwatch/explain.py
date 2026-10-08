@@ -2,17 +2,19 @@
 from __future__ import annotations
 
 import matplotlib
+
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import shap
 
-from .plotting import style_axes, INK, INK_2, SERIES
+from .plotting import INK, INK_2, SERIES, style_axes
 
 
 def shap_importance(model, X: pd.DataFrame, max_rows=2000, seed=42) -> pd.Series:
     Xs = X.sample(min(len(X), max_rows), random_state=seed)
+    model = getattr(model, "estimator_", model)   # EncodedClassifier -> fitted booster
     if hasattr(model, "coef_"):       # linear model
         sv = shap.LinearExplainer(model, Xs).shap_values(Xs)
     else:

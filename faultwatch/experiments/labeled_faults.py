@@ -28,7 +28,9 @@ from ..explain import plot_importance, shap_importance
 from ..models import make_classifier, regressor
 from ..plotting import INK, INK_2, SERIES, style_axes
 from ..regime import RegimeNormalizer
+from ..selection import as_metrics, choose
 from ..serve import healthy_reference, save_bundle
+from ..stats import compare_alarms
 
 
 def univariate_limits(h: pd.DataFrame, sensors, target_fa: float):
@@ -108,7 +110,14 @@ def run(cfg: dict, out: Path) -> dict:
     if ccfg.get("features"):          # a physics-chosen subset generalises better with few fault examples
         cols = [f"z_{f}" for f in ccfg["features"]]
         X_tr, X_te = X_tr[cols], X_te[cols]
-    clf = make_classifier(ccfg.get("model", "gbm"), cfg["seed"]).fit(X_tr, tr.fault_class)
+    # CV groups: whole recordings, or - when every recording holds a single fault
+    # (Tennessee Eastman) - contiguous time blocks within each recording, so a
+    # held-out fold never shares a time window with the fitting folds
+    nb = cfg.get("model_selection", {}).get("time_blocks")
+    groups = (tr["run"].astype(str) + "_" + (tr["sample"] * nb // (tr.groupby("run")["sample"].transform("max") + 1))
+              .astype(str)) if nb else tr["run"]
+    kind, sel = choose("classifier", X_tr, tr.fault_class, groups, cfg, ccfg.get("model", "gbm"))
+    clf = make_classifier(kind, cfg["seed"]).fit(X_tr, tr.fault_class)
     pred = clf.predict(X_te)
     labels = list(clf.classes_)
     cm = pd.DataFrame(confusion_matrix(te.fault_class, pred, labels=labels),
@@ -131,6 +140,14 @@ def run(cfg: dict, out: Path) -> dict:
         sev_metrics[name] = {"mae": float(mean_absolute_error(te.loc[mt, col], p)),
                              "range": [float(df[col].min()), float(df[col].max())]}
 
+    # ---- 4. per-sample predictions + uncertainty (recording = independent unit)
+    units = pd.DataFrame({"run": te["run"].astype(str).to_numpy(), "sample": te["sample"].to_numpy(),
+                          "fault": (~healthy_te), **alarms})
+    units.assign(fault_class=te.fault_class.to_numpy(), predicted_class=pred,
+                 health_score=det.score(Z_te)).to_csv(out / "predictions.csv.gz", index=False)
+    uncertainty = compare_alarms(units, list(alarms), "FaultWatch", "fault", cluster="run",
+                                 seed=cfg["seed"])
+
     metrics = {
         "dataset": cfg["description"],
         "samples": {"train": len(tr), "test": len(te), "healthy_train": int((~tr.faulty).sum()),
@@ -146,6 +163,9 @@ def run(cfg: dict, out: Path) -> dict:
     }
     if sev_metrics:
         metrics["severity_estimation"] = sev_metrics
+    metrics["uncertainty"] = uncertainty
+    if sel is not None:
+        metrics["model_selection"] = as_metrics(sel, kind)
     (out / "metrics.json").write_text(json.dumps(metrics, indent=2))
 
     keep = list(dict.fromkeys(regime + sensors + ["fault_class", "run", "sample"]

@@ -1,0 +1,43 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - uses: actions/setup-java@v4        # PySpark feature-pipeline parity test
+        with:
+          distribution: temurin
+          java-version: "17"
+      - name: Install
+        run: |
+          pip install -r requirements.txt
+          pip install -e ".[spark,dev]"
+      - name: Lint
+        run: ruff check .
+      - name: Unit tests (synthetic data, offline LLM, no downloads)
+        run: pytest -q
+      - name: Retrieval evals on the committed incident corpus (offline)
+        run: python -m faultwatch.genai.evals --offline --min-hit-at-5 0.7
+
+  docker:
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build API image
+        run: docker build -t faultwatch:ci .
+      - name: Smoke test
+        run: |
+          docker run -d -p 8000:8000 --name fw faultwatch:ci
+          for i in $(seq 1 30); do curl -sf localhost:8000/health && break; sleep 1; done
+          curl -sf localhost:8000/health

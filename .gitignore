@@ -7,3 +7,7 @@ models/
 mlflow.db
 mlruns/
 mlartifacts/
+monitoring/
+corpus/.cache/
+spark-warehouse/
+*.egg-info/

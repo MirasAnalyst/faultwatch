@@ -24,6 +24,7 @@ from ..data import LOADERS
 from ..plotting import INK, INK_2, NEUTRAL, SERIES, style_axes
 from ..regime import RegimeNormalizer
 from ..serve import healthy_reference, save_bundle
+from ..stats import compare_alarms
 
 HOURS_PER_SAMPLE = 1 / 6          # 10-minute SCADA averages
 
@@ -144,6 +145,13 @@ def run(cfg: dict, out: Path) -> dict:
             "normal_events_with_false_alarm": int(norm_ev[f"{m}|alarm_any"].astype(bool).sum()),
             "sample_alarm_rate_on_normal_data": float(pe[f"{m}|sample_alarm_rate_normal"].mean(skipna=True)),
         })
+    # events are the independent units: an alarm counts as a detection on a
+    # failure event (inside its window) and as a false alarm on a normal one
+    units = pd.DataFrame({"event_id": pe.event_id, "fault": pe.label == "anomaly"})
+    for m in methods:
+        units[m] = np.where(units.fault, pe[f"{m}|detected"].fillna(False).astype(bool),
+                            pe[f"{m}|alarm_any"].astype(bool))
+    uncertainty = compare_alarms(units, methods, "FaultWatch", "fault", cluster=None, seed=cfg["seed"])
     outcome = {r["event_id"]: (f"caught {r['FaultWatch|lead_hours'] / 24:.1f} days ahead"
                                if r.get("FaultWatch|detected") else "missed")
                for r in per_event if r["label"] == "anomaly"}
@@ -153,7 +161,8 @@ def run(cfg: dict, out: Path) -> dict:
                "event_detection": summary,
                "root_cause_check": [{"event_id": r.event_id, "description": r.description,
                                      "top_sensors_at_first_alarm": r.top_sensors_at_first_alarm}
-                                    for r in anom.itertuples()]}
+                                    for r in anom.itertuples()],
+               "uncertainty": uncertainty}
     (out / "metrics.json").write_text(json.dumps(metrics, indent=2))
 
     if keep is not None:              # serve the model of one turbine for the API / dashboard demo

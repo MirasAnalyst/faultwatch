@@ -12,17 +12,18 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from sklearn.metrics import (accuracy_score, confusion_matrix, f1_score,
-                             mean_absolute_error, r2_score)
+from sklearn.metrics import accuracy_score, confusion_matrix, f1_score, mean_absolute_error, r2_score
 from sklearn.model_selection import GroupShuffleSplit
 
 from ..anomaly import HealthDetector
 from ..data import LOADERS
 from ..explain import plot_importance, shap_importance
-from ..models import classifier, regressor
+from ..models import make_classifier, regressor
 from ..plotting import INK, INK_2, SERIES, style_axes
 from ..regime import RegimeNormalizer
+from ..selection import as_metrics, choose
 from ..serve import healthy_reference, save_bundle
+from ..stats import compare_alarms
 
 BINS = [0.2, 0.4, 0.6, 0.8, 1.0001]
 BIN_LABELS = ["20-40%", "40-60%", "60-80%", "80-100%"]
@@ -93,7 +94,9 @@ def run(cfg: dict, out: Path) -> dict:
     # ---- 2. fault classification (which component) -----------------------
     X_tr = pd.concat([Z_tr, tr[regime]], axis=1)
     X_te = pd.concat([Z_te, te[regime]], axis=1)
-    clf = classifier(cfg["seed"]).fit(X_tr, tr.fault_class)
+    kind, sel = choose("classifier", X_tr, tr.fault_class, tr[cfg["asset_id"]], cfg,
+                       cfg.get("classifier", {}).get("model", "gbm"))
+    clf = make_classifier(kind, cfg["seed"]).fit(X_tr, tr.fault_class)
     pred = clf.predict(X_te)
     labels = list(clf.classes_)
     cm = pd.DataFrame(confusion_matrix(te.fault_class, pred, labels=labels),
@@ -117,6 +120,21 @@ def run(cfg: dict, out: Path) -> dict:
     # ---- 4. an operator-facing example alert ------------------------------
     example = _example_alert(te, Z_te, det, clf, X_te, cfg)
 
+    # ---- 5. per-sample predictions + uncertainty -----------------------------
+    # Each degradation state is seen at every load level, so the state (not the
+    # row) is the independent unit that the bootstrap resamples.
+    units = pd.DataFrame({"state": te[cfg["asset_id"]].to_numpy(),
+                          "severity": te.severity.to_numpy(),
+                          "fault": (te.severity >= 0.2).to_numpy(),
+                          "healthy": te.healthy.to_numpy(),
+                          **{m: a for m, a in alarms.items()}})
+    preds = units.assign(fault_class=te.fault_class.to_numpy(), predicted_class=pred,
+                         health_score=det.score(Z_te), **{f: te[f].to_numpy() for f in regime})
+    preds.to_csv(out / "predictions.csv.gz", index=False)
+    scored = units[units.fault | units.healthy]
+    uncertainty = compare_alarms(scored, list(alarms), "FaultWatch (multivariate, load-aware)",
+                                 "fault", cluster="state", seed=cfg["seed"])
+
     metrics = {
         "dataset": cfg["description"],
         "rows": {"train": len(tr), "test": len(te), "healthy_train": int(tr.healthy.sum()),
@@ -130,7 +148,10 @@ def run(cfg: dict, out: Path) -> dict:
         "severity_estimation": sev_metrics,
         "top_shap_features": imp.head(5).round(4).to_dict(),
         "example_alert": example,
+        "uncertainty": uncertainty,
     }
+    if sel is not None:
+        metrics["model_selection"] = as_metrics(sel, kind)
     (out / "metrics.json").write_text(json.dumps(metrics, indent=2))
 
     truth_cols = [spec["column"] for spec in cfg["components"].values()] + ["fault_class", "severity"]
