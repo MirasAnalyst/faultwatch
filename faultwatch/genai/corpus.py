@@ -195,10 +195,17 @@ def is_machinery(meta: dict, text: str) -> bool:
     return strong >= 3 or (bool(MACHINERY_TITLE.search(meta.get("title", ""))) and strong >= 1)
 
 
-def chunk_document(doc_id: str, pages: list[str], size: int = 1400, overlap: int = 250) -> list[dict]:
+RUNNING_HEADER = re.compile(r"(?:NTSB/)?(?:MIR|MAB)[- ]?\d{2}\s*[-/ ]\s*\d{2}|MARINE ACCIDENT INVESTIGATION BRANCH|"
+                            r"^\s*(?:Page \d+|\d+ of \d+)\s*$", re.I)
+
+
+def chunk_document(doc_id: str, pages: list[str], size: int = 1400, overlap: int = 250,
+                   title: str = "") -> list[dict]:
     """Section-aware chunks: paragraphs are packed up to `size` characters,
-    each chunk is tagged with the last section heading seen."""
+    each chunk is tagged with the last section heading seen. Running page
+    headers (report number, title repeated on every page) are dropped."""
     section, buf, chunks = "Summary", "", []
+    short_title = title[:40].lower()
 
     def flush():
         nonlocal buf
@@ -212,6 +219,11 @@ def chunk_document(doc_id: str, pages: list[str], size: int = 1400, overlap: int
             s = line.strip()
             if not s or re.fullmatch(r"\d{1,3}", s):
                 continue
+            if len(s) < 140 and (RUNNING_HEADER.search(s) or (short_title and s.lower().startswith(short_title))):
+                continue
+            if title:                       # header glued into a body line by the PDF extractor
+                s = re.sub(re.escape(title) + r"\s*(?:NTSB/)?(?:MIR|MAB)[- ]?\d{2}\s*[-/ ]\s*\d{2}", " ", s)
+            s = re.sub(r"\s(?:NTSB/)?(?:MIR|MAB)-\d{2}[-/]\d{2}\s", " ", s)
             h = HEADING_RE.match(s)
             if h and len(s) < 60:
                 flush()
@@ -237,7 +249,7 @@ def build(raw: Path, out: Path) -> pd.DataFrame:
         text = "\n".join(pages)
         if is_machinery(meta, text):
             docs.append({**meta, "pages": len(pages), "chars": len(text)})
-            chunks += chunk_document(meta["doc_id"], pages)
+            chunks += chunk_document(meta["doc_id"], pages, title=meta["title"])
     idx = raw / "maib" / "_index.csv"
     if idx.exists():
         for r in pd.read_csv(idx).fillna("").itertuples():
@@ -251,7 +263,7 @@ def build(raw: Path, out: Path) -> pd.DataFrame:
                     "vessel_type": r.vessel_type}
             if is_machinery(meta, text):
                 docs.append({**meta, "pages": len(pages), "chars": len(text)})
-                chunks += chunk_document(meta["doc_id"], pages)
+                chunks += chunk_document(meta["doc_id"], pages, title=meta["title"])
     f = raw / "nsia" / "viking_sky_2024-05.pdf"
     if f.exists():
         pages = pdf_text(f)
@@ -260,7 +272,7 @@ def build(raw: Path, out: Path) -> pd.DataFrame:
                 "casualty_type": "Loss of propulsion", "date": "2019-03-23", "url": NSIA_VIKING_SKY,
                 "license": LICENSES["nsia"]}
         docs.append({**meta, "pages": len(pages), "chars": sum(map(len, pages))})
-        chunks += chunk_document(meta["doc_id"], pages)
+        chunks += chunk_document(meta["doc_id"], pages, title=meta["title"])
     manifest = pd.DataFrame(docs)
     manifest.to_csv(out / "manifest.csv", index=False)
     with gzip.open(out / "chunks.jsonl.gz", "wt", encoding="utf-8") as fh:

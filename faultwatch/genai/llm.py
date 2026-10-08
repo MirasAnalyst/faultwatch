@@ -127,7 +127,8 @@ class ExtractiveProvider:
         qterms = set(re.findall(r"[a-z]{4,}", q.lower()))
         picks = []
         for tag, body in re.findall(r"\[(\w[\w#.\-]*)\]\s*(.*?)(?=\n\[\w[\w#.\-]*\]|\Z)", user, re.S):
-            for s in re.split(r"(?<=[.!?])\s+", body.strip()):
+            body = re.sub(r"^\([^)]*\)\s*", "", body.strip())          # drop the "(title - section)" header
+            for s in re.split(r"(?<=[.!?])\s+", body):
                 score = len(qterms & set(re.findall(r"[a-z]{4,}", s.lower())))
                 if 60 < len(s) < 400 and score:
                     picks.append((score, tag, s.strip()))
