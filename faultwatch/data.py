@@ -198,5 +198,60 @@ def load_care(data_dir: str | Path, lag_samples: int = 6):
     return datasets, events
 
 
+# ---------------------------------------------------------------------------
+# Hydraulic power unit: UCI "Condition monitoring of hydraulic systems" (ZeMA, Helwig et al. 2015)
+# Stand-in for the hydraulic power units behind ship steering gear and fin stabilizers.
+HYDRAULIC_SENSORS = {   # file -> (quantity, sampling rate Hz)
+    "PS1": ("pressure", 100), "PS2": ("pressure", 100), "PS3": ("pressure", 100),
+    "PS4": ("pressure", 100), "PS5": ("pressure", 100), "PS6": ("pressure", 100),
+    "EPS1": ("motor_power", 100), "FS1": ("flow", 10), "FS2": ("flow", 10),
+    "TS1": ("temperature", 1), "TS2": ("temperature", 1), "TS3": ("temperature", 1),
+    "TS4": ("temperature", 1), "VS1": ("vibration", 1),
+}
+# CE, CP and SE are "virtual" sensors computed by the rig from the others
+# (cooling efficiency/power, efficiency factor); they are left out so every
+# input is something a real hydraulic power unit would measure.
+HYDRAULIC_COMPONENTS = ["cooler", "valve", "pump_leak", "accumulator"]
+
+
+def hydraulic_cycle_features(x: np.ndarray) -> dict[str, np.ndarray]:
+    """Per-cycle summary of one sensor (rows = 60 s load cycles): level,
+    spread, extremes, and the trend across the cycle."""
+    t = np.linspace(-0.5, 0.5, x.shape[1])
+    q = max(1, x.shape[1] // 10)
+    return {"mean": x.mean(1), "std": x.std(1), "min": x.min(1), "max": x.max(1),
+            "slope": (x - x.mean(1, keepdims=True)) @ t / (t @ t),
+            "start": x[:, :q].mean(1), "end": x[:, -q:].mean(1)}
+
+
+def load_hydraulic(data_dir: str | Path) -> pd.DataFrame:
+    """One row per 60 s load cycle: engineered features for each sensor
+    (`PS1_mean`, `TS1_slope`, ...), the four component conditions, the
+    stable flag, the cycle number and a `segment` id.
+
+    The rig was run in blocks: component settings were held for a stretch of
+    consecutive cycles, then changed. A `segment` is one such block. Cycles of
+    one segment are near-copies of each other (oil temperature drifts slowly),
+    so they must never be split between train and test."""
+    d = Path(data_dir)
+    cache = d / "cycle_features.csv"
+    if cache.exists():
+        return pd.read_csv(cache)
+    cols = {}
+    for name in HYDRAULIC_SENSORS:
+        x = pd.read_csv(d / f"{name}.txt", sep="\t", header=None, dtype=np.float32).to_numpy(np.float64)
+        for stat, v in hydraulic_cycle_features(x).items():
+            cols[f"{name}_{stat}"] = v
+    df = pd.DataFrame(cols)
+    prof = pd.read_csv(d / "profile.txt", sep="\t", header=None,
+                       names=HYDRAULIC_COMPONENTS + ["unstable"])
+    df = pd.concat([df, prof], axis=1)
+    df["cycle"] = np.arange(len(df))
+    changed = df[HYDRAULIC_COMPONENTS].diff().abs().sum(axis=1) > 0
+    df["segment"] = changed.cumsum()
+    df.to_csv(cache, index=False)
+    return df
+
+
 LOADERS = {"naval": load_naval, "cmapss": load_cmapss, "cwru": load_cwru, "tep": load_tep,
-           "care": load_care}
+           "care": load_care, "hydraulic": load_hydraulic}

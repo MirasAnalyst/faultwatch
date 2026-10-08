@@ -1,0 +1,47 @@
+# Hydraulic power unit (HPU) - the system behind ship steering gear and fin stabilizers.
+# Data: UCI "Condition monitoring of hydraulic systems" (ZeMA test rig, Helwig et al. 2015, CC BY 4.0).
+# 2,205 constant-load 60 s cycles with four components degraded at the same time.
+name: steering_hydraulics
+short_name: hydraulic power unit (steering gear / stabilizers)
+description: Hydraulic power unit - cooler, valve, pump leakage and accumulator graded together
+dataset: hydraulic
+data_dir: data/hydraulic
+experiment: component_condition
+
+# Physical sensors only (the rig's virtual efficiency sensors are excluded)
+sensors: [PS1, PS2, PS3, PS4, PS5, PS6, EPS1, FS1, FS2, TS1, TS2, TS3, TS4, VS1]
+features: [mean, std, min, max, slope, start, end]   # per-cycle summary of each sensor
+detector_features: [mean, std]                       # health score uses the levels and spread only
+group: segment          # block of consecutive cycles at one setting: never split across train/test
+folds: 5
+
+# Grades are listed best -> worst (values as logged in profile.txt).
+#   normal:   normal wear - an alarm here is a false alarm
+#   critical: close to total failure - the HPU can no longer be relied on to hold rudder / fin
+components:
+  cooler:      {column: cooler,      grades: [100, 20, 3],       normal: [100],      critical: [3]}
+  valve:       {column: valve,       grades: [100, 90, 80, 73],  normal: [100, 90],  critical: [73]}
+  pump_leak:   {column: pump_leak,   grades: [0, 1, 2],          normal: [0],        critical: [2]}
+  accumulator: {column: accumulator, grades: [130, 115, 100, 90], normal: [130, 115], critical: [90]}
+critical_probability: 0.5
+
+# What an HPU alarm panel typically has today. Thresholds: mean ± 3σ of normal-wear cycles.
+baseline_alarms:
+  - {label: Low system pressure, feature: PS1_min, direction: low}
+  - {label: High oil temperature, feature: TS1_max, direction: high}
+  - {label: Low flow, feature: FS1_mean, direction: low}
+
+detector: {method: mahalanobis, quantile: 0.99}
+model: gbm
+model_selection: {candidates: [gbm, xgb, catboost, logistic], folds: 5, apply: false}
+
+# Ship-level consequence of each component reaching its critical grade (see faultwatch/safety.py)
+safety:
+  system: steering_gear
+  redundancy: 2           # SOLAS: two independent power units; one failed unit leaves N=1 (no margin)
+  failure_modes:
+    pump_leak:   {effect: loss_of_steering, severity: 4, note: "internal leakage -> slow rudder response / cannot hold helm in heavy weather"}
+    valve:       {effect: loss_of_steering, severity: 4, note: "control valve lag -> rudder overshoot or no response"}
+    accumulator: {effect: loss_of_steering, severity: 3, note: "lost pre-charge -> no stored energy for peak demand"}
+    cooler:      {effect: fire_risk,        severity: 3, note: "oil overheating -> seal failure, hot-oil leak near hot surfaces"}
+seed: 42

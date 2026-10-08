@@ -69,7 +69,7 @@ class Scorer:
         self.det = bundle["detector"]
 
     @classmethod
-    def load(cls, path) -> "Scorer":
+    def load(cls, path) -> Scorer:
         return cls(joblib.load(path))
 
     @property
@@ -82,6 +82,7 @@ class Scorer:
         if (self.b.get("rul_model") is not None or self.norm.per_asset_baseline
                 or self.norm.smoothing_window > 1):
             cols += [self.cfg["asset_id"], self.cfg["time"]]
+        cols += list(self.b.get("component_features", []))
         return list(dict.fromkeys(cols))
 
     def _check(self, df: pd.DataFrame):
@@ -120,6 +121,11 @@ class Scorer:
             out["diagnosis_confidence"] = proba.max(axis=1).round(3)
             for comp, m in self.b.get("severity_models", {}).items():
                 out[f"severity_{comp}"] = m.predict(X)
+        for comp, m in self.b.get("component_models", {}).items():
+            # graded condition of each component, and P(component at a critical grade)
+            P = pd.DataFrame(m.predict_proba(df[self.b["component_features"]]), columns=m.classes_)
+            out[f"condition_{comp}"] = P.columns[P.to_numpy().argmax(axis=1)]
+            out[f"p_critical_{comp}"] = P[self.b["component_critical"][comp]].sum(axis=1).round(3).values
         if self.b.get("rul_model") is not None:
             X = rul_features(Z, df, self.det, a, t, self.b["trend_window"])[self.b["rul_features"]]
             out["rul"] = np.clip(self.b["rul_model"].predict(X), 0, self.b["rul_cap"]).round(1)

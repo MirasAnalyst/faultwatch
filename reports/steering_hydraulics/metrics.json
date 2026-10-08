@@ -1,0 +1,407 @@
+{
+  "dataset": "Hydraulic power unit - cooler, valve, pump leakage and accumulator graded together",
+  "cycles": {
+    "total": 2205,
+    "segments": 194,
+    "normal_wear": 62,
+    "degraded": 370,
+    "critical": 1773
+  },
+  "component_grading": {
+    "cooler": {
+      "grades_best_to_worst": [
+        "100",
+        "20",
+        "3"
+      ],
+      "accuracy": 0.9147392290249433,
+      "macro_f1": 0.9143541976361971,
+      "recall_by_grade": {
+        "100": 0.9892037786774629,
+        "20": 0.907103825136612,
+        "3": 0.8469945355191257
+      },
+      "critical_recall": 0.8469945355191257,
+      "accuracy_if_split_by_random_cycles": 0.9981859410430839
+    },
+    "valve": {
+      "grades_best_to_worst": [
+        "100",
+        "90",
+        "80",
+        "73"
+      ],
+      "accuracy": 0.9333333333333333,
+      "macro_f1": 0.9162521813992299,
+      "recall_by_grade": {
+        "100": 0.9848888888888889,
+        "90": 0.775,
+        "80": 0.8888888888888888,
+        "73": 0.975
+      },
+      "critical_recall": 0.975,
+      "accuracy_if_split_by_random_cycles": 0.9868480725623583
+    },
+    "pump_leak": {
+      "grades_best_to_worst": [
+        "0",
+        "1",
+        "2"
+      ],
+      "accuracy": 0.9981859410430839,
+      "macro_f1": 0.9976930939531585,
+      "recall_by_grade": {
+        "0": 0.9991809991809992,
+        "1": 1.0,
+        "2": 0.9939024390243902
+      },
+      "critical_recall": 0.9939024390243902,
+      "accuracy_if_split_by_random_cycles": 0.9963718820861678
+    },
+    "accumulator": {
+      "grades_best_to_worst": [
+        "130",
+        "115",
+        "100",
+        "90"
+      ],
+      "accuracy": 0.836281179138322,
+      "macro_f1": 0.8448615784140135,
+      "recall_by_grade": {
+        "130": 0.9449081803005008,
+        "115": 0.9172932330827067,
+        "100": 0.8796992481203008,
+        "90": 0.6943069306930693
+      },
+      "critical_recall": 0.6943069306930693,
+      "accuracy_if_split_by_random_cycles": 0.9886621315192744
+    }
+  },
+  "critical_detection": [
+    {
+      "method": "Low system pressure",
+      "critical_detected": 0.8674562887760857,
+      "false_alarm_rate_normal_wear": 0.06451612903225806,
+      "alarm_rate_degraded": 0.8378378378378378
+    },
+    {
+      "method": "High oil temperature",
+      "critical_detected": 0.7100958826847151,
+      "false_alarm_rate_normal_wear": 0.0,
+      "alarm_rate_degraded": 0.5837837837837838
+    },
+    {
+      "method": "Low flow",
+      "critical_detected": 0.8967851099830795,
+      "false_alarm_rate_normal_wear": 0.0,
+      "alarm_rate_degraded": 0.827027027027027
+    },
+    {
+      "method": "Limits on every sensor (mean \u00b1 3\u03c3)",
+      "critical_detected": 0.9661590524534687,
+      "false_alarm_rate_normal_wear": 0.3548387096774194,
+      "alarm_rate_degraded": 0.9243243243243243
+    },
+    {
+      "method": "FaultWatch health score (unsupervised)",
+      "critical_detected": 1.0,
+      "false_alarm_rate_normal_wear": 0.6612903225806451,
+      "alarm_rate_degraded": 0.972972972972973
+    },
+    {
+      "method": "FaultWatch component grading",
+      "critical_detected": 0.8477157360406091,
+      "false_alarm_rate_normal_wear": 0.16129032258064516,
+      "alarm_rate_degraded": 0.01891891891891892
+    }
+  ],
+  "critical_detection_ci": {
+    "FaultWatch": {
+      "estimate": 0.8477157360406091,
+      "ci_low": 0.7200624973723614,
+      "ci_high": 0.9920430239126341,
+      "level": 0.95,
+      "units": 140
+    }
+  },
+  "uncertainty": {
+    "Low system pressure": {
+      "detection": {
+        "estimate": 0.8674562887760857,
+        "ci_low": 0.7170449629361944,
+        "ci_high": 0.9688176309544266,
+        "level": 0.95,
+        "units": 140
+      },
+      "false_alarm": {
+        "estimate": 0.06451612903225806,
+        "ci_low": 0.0,
+        "ci_high": 0.16129032258064516,
+        "level": 0.95,
+        "units": 8
+      },
+      "vs_reference": {
+        "mean_diff": 0.05458333333333334,
+        "p_value": 0.0082991700829917,
+        "units": 140,
+        "reference": "FaultWatch component grading"
+      }
+    },
+    "High oil temperature": {
+      "detection": {
+        "estimate": 0.7100958826847151,
+        "ci_low": 0.5202735988647497,
+        "ci_high": 0.8552818020484149,
+        "level": 0.95,
+        "units": 140
+      },
+      "false_alarm": {
+        "estimate": 0.0,
+        "ci_low": 0.0,
+        "ci_high": 0.0,
+        "level": 0.95,
+        "units": 8
+      },
+      "vs_reference": {
+        "mean_diff": 0.2541173469387755,
+        "p_value": 9.999000099990002e-05,
+        "units": 140,
+        "reference": "FaultWatch component grading"
+      }
+    },
+    "Low flow": {
+      "detection": {
+        "estimate": 0.8967851099830795,
+        "ci_low": 0.7389308755369602,
+        "ci_high": 0.9970309307474493,
+        "level": 0.95,
+        "units": 140
+      },
+      "false_alarm": {
+        "estimate": 0.0,
+        "ci_low": 0.0,
+        "ci_high": 0.0,
+        "level": 0.95,
+        "units": 8
+      },
+      "vs_reference": {
+        "mean_diff": 0.005214285714285716,
+        "p_value": 0.6922307769223077,
+        "units": 140,
+        "reference": "FaultWatch component grading"
+      }
+    },
+    "Limits on every sensor (mean \u00b1 3\u03c3)": {
+      "detection": {
+        "estimate": 0.9661590524534687,
+        "ci_low": 0.9190950968200277,
+        "ci_high": 0.9993389984198807,
+        "level": 0.95,
+        "units": 140
+      },
+      "false_alarm": {
+        "estimate": 0.3548387096774194,
+        "ci_low": 0.028169014084507043,
+        "ci_high": 0.7328345070422532,
+        "level": 0.95,
+        "units": 8
+      },
+      "vs_reference": {
+        "mean_diff": -0.002224937343358395,
+        "p_value": 0.8942105789421058,
+        "units": 140,
+        "reference": "FaultWatch component grading"
+      }
+    },
+    "FaultWatch health score (unsupervised)": {
+      "detection": {
+        "estimate": 1.0,
+        "ci_low": 1.0,
+        "ci_high": 1.0,
+        "level": 0.95,
+        "units": 140
+      },
+      "false_alarm": {
+        "estimate": 0.6612903225806451,
+        "ci_low": 0.41494425385934824,
+        "ci_high": 0.8875,
+        "level": 0.95,
+        "units": 8
+      },
+      "vs_reference": {
+        "mean_diff": -0.016916666666666667,
+        "p_value": 0.0633936606339366,
+        "units": 140,
+        "reference": "FaultWatch component grading"
+      }
+    },
+    "FaultWatch component grading": {
+      "detection": {
+        "estimate": 0.8477157360406091,
+        "ci_low": 0.7180462680951408,
+        "ci_high": 0.9907129376152358,
+        "level": 0.95,
+        "units": 140
+      },
+      "false_alarm": {
+        "estimate": 0.16129032258064516,
+        "ci_low": 0.0,
+        "ci_high": 0.45161290322580644,
+        "level": 0.95,
+        "units": 8
+      }
+    }
+  },
+  "top_shap_features": {
+    "cooler": {
+      "TS2_std": 1.1101,
+      "TS4_min": 0.8111,
+      "PS2_mean": 0.5932,
+      "TS1_std": 0.5321,
+      "PS6_end": 0.4779
+    },
+    "valve": {
+      "PS2_slope": 1.9883,
+      "PS1_slope": 1.2383,
+      "PS2_std": 0.5333,
+      "FS1_max": 0.5201,
+      "FS1_slope": 0.3892
+    },
+    "pump_leak": {
+      "FS1_end": 2.9123,
+      "FS1_mean": 1.7687,
+      "EPS1_max": 0.4399,
+      "EPS1_start": 0.3174,
+      "EPS1_min": 0.2676
+    },
+    "accumulator": {
+      "PS1_start": 0.9067,
+      "PS3_std": 0.5563,
+      "FS2_mean": 0.5504,
+      "FS1_start": 0.4383,
+      "TS1_min": 0.2462
+    }
+  },
+  "model_selection": {
+    "cooler": {
+      "used": "gbm",
+      "winner_by_cv": "logistic",
+      "candidates": [
+        {
+          "model": "logistic",
+          "cv_macro_f1": 0.9726,
+          "cv_macro_f1_std": 0.0356,
+          "fit_seconds": 0.38
+        },
+        {
+          "model": "catboost",
+          "cv_macro_f1": 0.941,
+          "cv_macro_f1_std": 0.0774,
+          "fit_seconds": 3.76
+        },
+        {
+          "model": "gbm",
+          "cv_macro_f1": 0.9255,
+          "cv_macro_f1_std": 0.0903,
+          "fit_seconds": 6.97
+        },
+        {
+          "model": "xgb",
+          "cv_macro_f1": 0.8784,
+          "cv_macro_f1_std": 0.1425,
+          "fit_seconds": 1.0
+        }
+      ]
+    },
+    "valve": {
+      "used": "gbm",
+      "winner_by_cv": "xgb",
+      "candidates": [
+        {
+          "model": "xgb",
+          "cv_macro_f1": 0.9114,
+          "cv_macro_f1_std": 0.0237,
+          "fit_seconds": 3.67
+        },
+        {
+          "model": "gbm",
+          "cv_macro_f1": 0.9065,
+          "cv_macro_f1_std": 0.0239,
+          "fit_seconds": 10.49
+        },
+        {
+          "model": "catboost",
+          "cv_macro_f1": 0.8927,
+          "cv_macro_f1_std": 0.0183,
+          "fit_seconds": 4.17
+        },
+        {
+          "model": "logistic",
+          "cv_macro_f1": 0.7832,
+          "cv_macro_f1_std": 0.0891,
+          "fit_seconds": 1.05
+        }
+      ]
+    },
+    "pump_leak": {
+      "used": "gbm",
+      "winner_by_cv": "xgb",
+      "candidates": [
+        {
+          "model": "xgb",
+          "cv_macro_f1": 0.9975,
+          "cv_macro_f1_std": 0.0027,
+          "fit_seconds": 1.7
+        },
+        {
+          "model": "gbm",
+          "cv_macro_f1": 0.997,
+          "cv_macro_f1_std": 0.0046,
+          "fit_seconds": 7.83
+        },
+        {
+          "model": "catboost",
+          "cv_macro_f1": 0.997,
+          "cv_macro_f1_std": 0.0029,
+          "fit_seconds": 3.34
+        },
+        {
+          "model": "logistic",
+          "cv_macro_f1": 0.8967,
+          "cv_macro_f1_std": 0.0799,
+          "fit_seconds": 1.2
+        }
+      ]
+    },
+    "accumulator": {
+      "used": "gbm",
+      "winner_by_cv": "gbm",
+      "candidates": [
+        {
+          "model": "gbm",
+          "cv_macro_f1": 0.8588,
+          "cv_macro_f1_std": 0.0864,
+          "fit_seconds": 11.05
+        },
+        {
+          "model": "xgb",
+          "cv_macro_f1": 0.8448,
+          "cv_macro_f1_std": 0.0911,
+          "fit_seconds": 2.39
+        },
+        {
+          "model": "catboost",
+          "cv_macro_f1": 0.8406,
+          "cv_macro_f1_std": 0.0947,
+          "fit_seconds": 4.22
+        },
+        {
+          "model": "logistic",
+          "cv_macro_f1": 0.4662,
+          "cv_macro_f1_std": 0.0712,
+          "fit_seconds": 0.83
+        }
+      ]
+    }
+  }
+}
