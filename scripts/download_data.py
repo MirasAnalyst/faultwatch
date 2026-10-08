@@ -1,6 +1,6 @@
 """Download the public datasets into data/.
 
-    python scripts/download_data.py                 # all datasets (~330 MB)
+    python scripts/download_data.py                 # all datasets (~400 MB + incident reports)
     python scripts/download_data.py naval cmapss    # just some
 """
 import io
@@ -17,6 +17,7 @@ CMAPSS = "https://phm-datasets.s3.amazonaws.com/NASA/6.+Turbofan+Engine+Degradat
 CWRU = "https://engineering.case.edu/sites/default/files/{}.mat"
 TEP = "https://raw.githubusercontent.com/camaramm/tennessee-eastman-profBraatz/master/{}"
 CARE = "https://zenodo.org/api/records/15846963/files/CARE_To_Compare.zip/content"
+HYDRAULIC = "https://archive.ics.uci.edu/static/public/447/condition+monitoring+of+hydraulic+systems.zip"
 
 
 def get(url) -> bytes:
@@ -83,7 +84,31 @@ def wind():
                 target.write_bytes(z.read(info))
 
 
-DATASETS = {"naval": naval, "cmapss": cmapss, "cwru": cwru, "tep": tep, "wind": wind}
+def hydraulic():
+    """UCI hydraulic test rig (~75 MB zip): steering-gear / stabilizer power-unit analog."""
+    d = ROOT / "hydraulic"
+    d.mkdir(parents=True, exist_ok=True)
+    if not (d / "profile.txt").exists():
+        fetch_zip(HYDRAULIC).extractall(d)
+
+
+def incidents():
+    """Marine accident reports (NTSB, MAIB, NSIA) -> machinery-casualty corpus in corpus/.
+    Raw PDFs stay in data/incidents (not committed); corpus/ holds the extracted text."""
+    from faultwatch.genai import corpus
+    raw = ROOT / "incidents"
+    print("downloading NTSB marine reports (probing MIR/MAB series)")
+    corpus.download_ntsb(raw)
+    print("downloading MAIB reports (machinery-related titles)")
+    corpus.download_maib(raw)
+    print("downloading NSIA Viking Sky report")
+    corpus.download_nsia(raw)
+    m = corpus.build(raw, ROOT.parent / "corpus")
+    print(f"corpus: {len(m)} machinery-casualty reports")
+
+
+DATASETS = {"naval": naval, "cmapss": cmapss, "cwru": cwru, "tep": tep, "wind": wind,
+            "hydraulic": hydraulic, "incidents": incidents}
 
 
 def main():
