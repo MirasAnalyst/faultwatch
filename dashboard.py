@@ -2,6 +2,12 @@
 
     streamlit run dashboard.py          # after `python run.py configs/*.yaml`
 
+Pages
+  * Asset condition   - live condition, safety risk, baseline drift, validation (per asset type)
+  * Fleet safety      - power-plant blackout simulation and pilot design
+  * Incident copilot  - cited lessons from machinery-casualty reports, failure triage
+  * Model health      - latency, cost, adoption, precision, slice parity, retrain advice
+
 Scores each asset type's held-out demo data through the same `Scorer` the API
 uses, so what the operator sees here is what the API would return.
 """
@@ -15,7 +21,9 @@ import numpy as np
 import pandas as pd
 import streamlit as st
 
+from faultwatch.monitor import MonitorStore, retrain_policy, slice_parity
 from faultwatch.plotting import GRID, INK_2, NEUTRAL, SERIES
+from faultwatch.safety import risk_register
 from faultwatch.schedule import plan_maintenance
 from faultwatch.serve import load_all
 
@@ -33,8 +41,30 @@ def scored(name: str) -> pd.DataFrame:
     s = scorers()[name]
     demo = s.b["demo"]
     out = s.score(demo)
+    out["top_sensors_raw"] = out["top_sensors"]
     out["top_sensors"] = out["top_sensors"].map(lambda d: ", ".join(f"{k} {v:.0%}" for k, v in d.items()))
     return pd.concat([demo.reset_index(drop=True), out], axis=1)
+
+
+@st.cache_resource
+def copilot():
+    from faultwatch.genai.copilot import Copilot
+    if not Path("corpus/chunks.jsonl.gz").exists():
+        return None
+    return Copilot(corpus_dir="corpus")
+
+
+def show_answer(a: dict):
+    if a["insufficient_evidence"]:
+        st.warning(a["answer"])
+    else:
+        st.markdown(a["answer"])
+    if a.get("citations"):
+        st.markdown("**Sources**")
+        for c in {c["doc_id"]: c for c in a["citations"]}.values():
+            st.markdown(f"- [{c['title']}]({c['url']}) · `{c['doc_id']}`")
+    st.caption(f"{a.get('provider')} · {a.get('tokens', 0)} tokens · ${a.get('cost_usd', 0):.4f} · "
+               f"{a.get('latency_s', 0):.2f} s · decision support: a qualified engineer decides")
 
 
 def axis_style(chart):
@@ -73,205 +103,490 @@ if not S:
              "`python run.py configs/*.yaml` first.")
     st.stop()
 
+PAGES = ["Asset condition", "Fleet safety outlook", "Incident copilot", "Model health"]
+page = st.sidebar.radio("View", PAGES, index=PAGES.index(st.query_params.get("page", PAGES[0]))
+                        if st.query_params.get("page") in PAGES else 0)
+st.query_params["page"] = page
 names = list(S)
 wanted = st.query_params.get("asset")              # deep link: ?asset=wind_turbine_care
-name = st.sidebar.selectbox("Asset type", names, index=names.index(wanted) if wanted in names else 0,
-                            format_func=lambda n: S[n].cfg.get("description", n))
-st.query_params["asset"] = name
+if page == "Asset condition":
+    name = st.sidebar.selectbox("Asset type", names, index=names.index(wanted) if wanted in names else 0,
+                                format_func=lambda n: S[n].cfg.get("description", n))
+    st.query_params["asset"] = name
+else:
+    name = wanted if wanted in names else names[0]
 s = S[name]
-st.caption(f"{s.cfg.get('description', name)} · held-out data never seen in training · "
-           f"alarm threshold {s.det.threshold_:.0f}")
+if page == "Asset condition":
+    st.caption(f"{s.cfg.get('description', name)} · held-out data never seen in training · "
+               f"alarm threshold {s.det.threshold_:.0f}")
 df = scored(name)
-tab_live, tab_drift, tab_val = st.tabs(["Live condition", "Baseline drift", "Validation results"])
+current, current_machine = df.iloc[[-1]], None          # what the safety tab treats as "now"
 
-# ---- live condition --------------------------------------------------------
-with tab_live:
-    if s.b.get("rul_model") is not None:                      # fleet run-to-failure asset
-        a, t = s.cfg["asset_id"], s.cfg["time"]
-        latest = df.sort_values(t).groupby(a).tail(1).set_index(a)
-        m = s.b["maintenance"]
-        plan = plan_maintenance(latest["rul"].rename("rul_pred").rename_axis("asset").reset_index(),
-                                m["horizon"], m["capacity_per_day"],
-                                preventive_cost=m["preventive_cost"], failure_cost=m["failure_cost"],
-                                wasted_life_cost=m["wasted_life_cost"],
-                                rul_uncertainty=s.b.get("rul_uncertainty", 10.0)).set_index("asset")
-        latest["service_day"] = plan["service_day"]
-        alarm_col = "alarm_confirmed" if "alarm_confirmed" in latest else "alarm"
+if page == "Asset condition":
+    tab_live, tab_risk, tab_drift, tab_val = st.tabs(["Live condition", "Safety risk", "Baseline drift",
+                                                      "Validation results"])
 
-        c1, c2, c3, c4 = st.columns(4)
-        c1.metric("Machines", len(latest))
-        c2.metric("In alarm", int(latest[alarm_col].sum()))
-        c3.metric(f"Service due ≤ {m['horizon']} days", int(latest["service_day"].notna().sum()))
-        c4.metric("Median remaining life", f"{latest['rul'].median():.0f} cycles")
+    # ---- live condition --------------------------------------------------------
+    with tab_live:
+        if s.b.get("rul_model") is not None:                      # fleet run-to-failure asset
+            a, t = s.cfg["asset_id"], s.cfg["time"]
+            latest = df.sort_values(t).groupby(a).tail(1).set_index(a)
+            m = s.b["maintenance"]
+            plan = plan_maintenance(latest["rul"].rename("rul_pred").rename_axis("asset").reset_index(),
+                                    m["horizon"], m["capacity_per_day"],
+                                    preventive_cost=m["preventive_cost"], failure_cost=m["failure_cost"],
+                                    wasted_life_cost=m["wasted_life_cost"],
+                                    rul_uncertainty=s.b.get("rul_uncertainty", 10.0)).set_index("asset")
+            latest["service_day"] = plan["service_day"]
+            current, current_machine = latest.reset_index(), latest.index.to_series().reset_index(drop=True)
+            alarm_col = "alarm_confirmed" if "alarm_confirmed" in latest else "alarm"
 
-        st.subheader("Fleet")
-        view = latest.assign(status=np.where(latest[alarm_col], "▲ alarm", "● normal"))[
-            ["status", "health_score", "rul", "service_day", "top_sensors", t]].sort_values("rul")
-        view.columns = ["Status", "Health score", "RUL (cycles)", "Service day", "Driving sensors", "Age (cycles)"]
-        st.dataframe(view.style.format({"Health score": "{:.0f}", "RUL (cycles)": "{:.0f}", "Service day": "{:.0f}"}),
-                     width="stretch", height=280)
+            c1, c2, c3, c4 = st.columns(4)
+            c1.metric("Machines", len(latest))
+            c2.metric("In alarm", int(latest[alarm_col].sum()))
+            c3.metric(f"Service due ≤ {m['horizon']} days", int(latest["service_day"].notna().sum()))
+            c4.metric("Median remaining life", f"{latest['rul'].median():.0f} cycles")
 
-        unit = st.selectbox("Machine", view.index, format_func=lambda u: f"{a} {u}")
-        g = df[df[a] == unit].sort_values(t)
-        row = g.iloc[-1]
-        st.markdown(f"### {a} {unit} &nbsp; {status_badge(bool(row[alarm_col]))}")
-        k1, k2, k3 = st.columns(3)
-        k1.metric("Health score", f"{row['health_score']:.0f}")
-        k1.caption(f"alarm above {s.det.threshold_:.0f}")
-        k2.metric("Remaining life", f"{row['rul']:.0f} cycles")
-        if "true_rul" in g:
-            k2.caption(f"actual: {row['true_rul']:.0f} cycles")
-        sd = latest.at[unit, "service_day"]
-        k3.metric("Planned service", "not in horizon" if pd.isna(sd) else f"day {sd:.0f}")
-        k3.caption(f"crew capacity {m['capacity_per_day']} machines/day")
+            st.subheader("Fleet")
+            view = latest.assign(status=np.where(latest[alarm_col], "▲ alarm", "● normal"))[
+                ["status", "health_score", "rul", "service_day", "top_sensors", t]].sort_values("rul")
+            view.columns = ["Status", "Health score", "RUL (cycles)", "Service day", "Driving sensors", "Age (cycles)"]
+            st.dataframe(view.style.format({"Health score": "{:.0f}", "RUL (cycles)": "{:.0f}",
+                                            "Service day": "{:.0f}"}),
+                         width="stretch", height=280)
 
-        left, right = st.columns(2)
-        with left:
-            gp = g[g[t] > s.norm.smoothing_window]                  # skip filter warm-up
-            base = alt.Chart(gp).encode(x=alt.X(f"{t}:Q", title="Cycle"))
-            line = base.mark_line(color=SERIES[0], strokeWidth=2).encode(
-                y=log_axis(gp["health_score"], "Health score (log)"),
-                tooltip=[t, alt.Tooltip("health_score:Q", format=".0f"), "top_sensors"])
+            unit = st.selectbox("Machine", view.index, format_func=lambda u: f"{a} {u}")
+            g = df[df[a] == unit].sort_values(t)
+            row = g.iloc[-1]
+            st.markdown(f"### {a} {unit} &nbsp; {status_badge(bool(row[alarm_col]))}")
+            k1, k2, k3 = st.columns(3)
+            k1.metric("Health score", f"{row['health_score']:.0f}")
+            k1.caption(f"alarm above {s.det.threshold_:.0f}")
+            k2.metric("Remaining life", f"{row['rul']:.0f} cycles")
+            if "true_rul" in g:
+                k2.caption(f"actual: {row['true_rul']:.0f} cycles")
+            sd = latest.at[unit, "service_day"]
+            k3.metric("Planned service", "not in horizon" if pd.isna(sd) else f"day {sd:.0f}")
+            k3.caption(f"crew capacity {m['capacity_per_day']} machines/day")
+
+            left, right = st.columns(2)
+            with left:
+                gp = g[g[t] > s.norm.smoothing_window]                  # skip filter warm-up
+                base = alt.Chart(gp).encode(x=alt.X(f"{t}:Q", title="Cycle"))
+                line = base.mark_line(color=SERIES[0], strokeWidth=2).encode(
+                    y=log_axis(gp["health_score"], "Health score (log)"),
+                    tooltip=[t, alt.Tooltip("health_score:Q", format=".0f"), "top_sensors"])
+                thr = alt.Chart(pd.DataFrame({"y": [s.det.threshold_]})).mark_rule(
+                    color=NEUTRAL, strokeDash=[5, 4]).encode(y="y:Q")
+                thr_lbl = alt.Chart(pd.DataFrame({"y": [s.det.threshold_], "x": [gp[t].min()]})).mark_text(
+                    align="left", dy=-7, color=INK_2, text="alarm threshold").encode(x="x:Q", y="y:Q")
+                st.markdown("**Health score**")
+                st.altair_chart(axis_style((line + thr + thr_lbl).properties(height=280)), width="stretch")
+            with right:
+                long = g.melt(id_vars=[t], value_vars=["rul", "true_rul"], var_name="series", value_name="cycles")
+                long["series"] = long["series"].map({"rul": "Predicted", "true_rul": "Actual"})
+                dom = ["Predicted", "Actual"]
+                ch = alt.Chart(long).mark_line(strokeWidth=2).encode(
+                    x=alt.X(f"{t}:Q", title="Cycle"), y=alt.Y("cycles:Q", title="Remaining life (cycles)"),
+                    color=alt.Color("series:N", scale=alt.Scale(domain=dom, range=[SERIES[0], SERIES[1]]),
+                                    legend=alt.Legend(orient="top", title=None)),
+                    strokeDash=alt.StrokeDash("series:N", scale=alt.Scale(domain=dom, range=[[1, 0], [5, 4]]),
+                                              legend=None),
+                    tooltip=[t, "series", alt.Tooltip("cycles:Q", format=".0f")])
+                st.markdown("**Remaining life: predicted vs actual**")
+                st.altair_chart(axis_style(ch.properties(height=280)), width="stretch")
+            st.markdown("**What is driving the health score now**")
+            st.altair_chart(contributions_chart(s.score(g[s.required_columns], top_n=6)["top_sensors"].iloc[-1]),
+                            width="stretch")
+
+        elif s.b.get("component_models"):                     # graded components (hydraulic power unit)
+            comps = list(s.b["component_models"])
+            spec = s.cfg["components"]
+            tiers = ["all"] + sorted(df["tier"].unique()) if "tier" in df else ["all"]
+            pick = st.radio("Show cycles whose true condition tier is", tiers, horizontal=True)
+            sub = df if pick == "all" else df[df["tier"] == pick]
+            pcrit = sub[[f"p_critical_{c}" for c in comps]].max(axis=1)
+            right = np.mean([(sub[f"condition_{c}"].astype(str) == sub[spec[c]["column"]].astype(str)).mean()
+                             for c in comps])
+            c1, c2, c3, c4 = st.columns(4)
+            c1.metric("Load cycles", len(sub))
+            c2.metric("A component predicted critical", f"{(pcrit >= 0.5).mean():.0%}")
+            c3.metric("Health score in alarm", f"{sub['alarm'].mean():.0%}")
+            c4.metric("Component grades matching truth", f"{right:.0%}")
+            cols = ["cycle", "tier"] + [x for c in comps for x in (f"condition_{c}", spec[c]["column"])]
+            view = sub[cols].rename(columns={f"condition_{c}": f"{c} (predicted)" for c in comps} |
+                                    {spec[c]["column"]: f"{c} (actual)" for c in comps})
+            st.dataframe(view, width="stretch", height=240, hide_index=True)
+            cyc = st.selectbox("Inspect cycle", sub["cycle"].tolist())
+            row = sub[sub["cycle"] == cyc].iloc[0]
+            current, current_machine = sub[sub["cycle"] == cyc], pd.Series(["HPU-1"])
+            st.markdown(f"### Cycle {cyc} &nbsp; {status_badge(bool(pcrit.loc[row.name] >= 0.5))}")
+            ks = st.columns(len(comps))
+            for k, c in zip(ks, comps):
+                k.metric(c.replace("_", " "), str(row[f"condition_{c}"]))
+                k.caption(f"actual {row[spec[c]['column']]} · P(critical) {row[f'p_critical_{c}']:.0%}")
+            pc = pd.DataFrame({"component": comps, "p": [row[f"p_critical_{c}"] for c in comps]})
+            bars = alt.Chart(pc).mark_bar(color=SERIES[1], cornerRadiusEnd=4, height=16).encode(
+                x=alt.X("p:Q", scale=alt.Scale(domain=[0, 1]), axis=alt.Axis(format="%"),
+                        title="P(component at a critical grade)"), y=alt.Y("component:N", title=None))
+            st.altair_chart(axis_style(bars.properties(height=40 * len(comps) + 20)), width="stretch")
+            st.markdown("**Sensors furthest from normal wear**")
+            st.altair_chart(contributions_chart(s.score(current[s.required_columns], top_n=6)["top_sensors"].iloc[0]),
+                            width="stretch")
+
+        elif s.b.get("classifier") is None:                       # one machine's timeline (SCADA)
+            a, t = s.cfg["asset_id"], s.cfg["time"]
+            g = df.sort_values(t)
+            alarm_col = "alarm_confirmed" if "alarm_confirmed" in g else "alarm"
+            st.markdown(f"**{s.cfg.get('demo_description', '')}**. The shaded band is the labelled pre-failure "
+                        "window, which ends at the logged failure.")
+            first = g[g[alarm_col]]
+            win = g[g["event_window"]] if "event_window" in g else g.iloc[0:0]
+            c1, c2, c3 = st.columns(3)
+            c1.metric("Samples scored", f"{len(g):,}")
+            c2.metric("Time in alarm", f"{g[alarm_col].mean():.1%}")
+            if len(first) and len(win):
+                lead = (win["time_stamp"].max() - first["time_stamp"].min()) / pd.Timedelta(days=1)
+                c3.metric("First alarm before failure", f"{lead:.1f} days" if lead > 0 else "none")
+            base = alt.Chart(g).encode(x=alt.X("time_stamp:T", title=None))
+            band = (alt.Chart(pd.DataFrame({"start": [win["time_stamp"].min()], "end": [win["time_stamp"].max()]}))
+                    .mark_rect(color=SERIES[1], opacity=0.12).encode(x="start:T", x2="end:T")) if len(win) else None
+            line = base.mark_line(color=SERIES[0], strokeWidth=1.5).encode(
+                y=log_axis(g["health_score"], "Health score (log)"),
+                tooltip=[alt.Tooltip("time_stamp:T", format="%d %b %H:%M"),
+                         alt.Tooltip("health_score:Q", format=".0f"), "top_sensors"])
             thr = alt.Chart(pd.DataFrame({"y": [s.det.threshold_]})).mark_rule(
                 color=NEUTRAL, strokeDash=[5, 4]).encode(y="y:Q")
-            thr_lbl = alt.Chart(pd.DataFrame({"y": [s.det.threshold_], "x": [gp[t].min()]})).mark_text(
-                align="left", dy=-7, color=INK_2, text="alarm threshold").encode(x="x:Q", y="y:Q")
-            st.markdown("**Health score**")
-            st.altair_chart(axis_style((line + thr + thr_lbl).properties(height=280)), width="stretch")
-        with right:
-            long = g.melt(id_vars=[t], value_vars=["rul", "true_rul"], var_name="series", value_name="cycles")
-            long["series"] = long["series"].map({"rul": "Predicted", "true_rul": "Actual"})
-            dom = ["Predicted", "Actual"]
-            ch = alt.Chart(long).mark_line(strokeWidth=2).encode(
-                x=alt.X(f"{t}:Q", title="Cycle"), y=alt.Y("cycles:Q", title="Remaining life (cycles)"),
-                color=alt.Color("series:N", scale=alt.Scale(domain=dom, range=[SERIES[0], SERIES[1]]),
-                                legend=alt.Legend(orient="top", title=None)),
-                strokeDash=alt.StrokeDash("series:N", scale=alt.Scale(domain=dom, range=[[1, 0], [5, 4]]), legend=None),
-                tooltip=[t, "series", alt.Tooltip("cycles:Q", format=".0f")])
-            st.markdown("**Remaining life: predicted vs actual**")
-            st.altair_chart(axis_style(ch.properties(height=280)), width="stretch")
-        st.markdown("**What is driving the health score now**")
-        st.altair_chart(contributions_chart(s.score(g[s.required_columns], top_n=6)["top_sensors"].iloc[-1]),
-                        width="stretch")
+            layers = ([band] if band is not None else []) + [line, thr]
+            st.markdown("**Health score** (dashed: alarm threshold)")
+            st.altair_chart(axis_style(alt.layer(*layers).properties(height=300)), width="stretch")
+            days = sorted(g["time_stamp"].dt.floor("D").unique())
+            day = st.select_slider("Inspect day", options=days, value=days[-1],
+                                   format_func=lambda d: pd.Timestamp(d).strftime("%d %b"))
+            sel = g[g["time_stamp"].dt.floor("D") == day]
+            worst = sel.loc[sel["health_score"].idxmax()]
+            current, current_machine = sel.loc[[sel["health_score"].idxmax()]], None
+            st.markdown(f"**Worst sample that day** · {worst['time_stamp']:%d %b %H:%M} · "
+                        f"health score {worst['health_score']:.0f} · {status_badge(bool(worst[alarm_col]))}")
+            hist = df.sort_values(t)
+            upto = hist[hist[t] <= worst[t]][s.required_columns]
+            st.altair_chart(contributions_chart(s.score(upto, top_n=6)["top_sensors"].iloc[-1]), width="stretch")
 
-    elif s.b.get("classifier") is None:                       # one machine's timeline (SCADA)
-        a, t = s.cfg["asset_id"], s.cfg["time"]
-        g = df.sort_values(t)
-        alarm_col = "alarm_confirmed" if "alarm_confirmed" in g else "alarm"
-        st.markdown(f"**{s.cfg.get('demo_description', '')}**. The shaded band is the labelled pre-failure "
-                    "window, which ends at the logged failure.")
-        first = g[g[alarm_col]]
-        win = g[g["event_window"]] if "event_window" in g else g.iloc[0:0]
-        c1, c2, c3 = st.columns(3)
-        c1.metric("Samples scored", f"{len(g):,}")
-        c2.metric("Time in alarm", f"{g[alarm_col].mean():.1%}")
-        if len(first) and len(win):
-            lead = (win["time_stamp"].max() - first["time_stamp"].min()) / pd.Timedelta(days=1)
-            c3.metric("First alarm before failure", f"{lead:.1f} days" if lead > 0 else "none")
-        base = alt.Chart(g).encode(x=alt.X("time_stamp:T", title=None))
-        band = (alt.Chart(pd.DataFrame({"start": [win["time_stamp"].min()], "end": [win["time_stamp"].max()]}))
-                .mark_rect(color=SERIES[1], opacity=0.12).encode(x="start:T", x2="end:T")) if len(win) else None
-        line = base.mark_line(color=SERIES[0], strokeWidth=1.5).encode(
-            y=log_axis(g["health_score"], "Health score (log)"),
-            tooltip=[alt.Tooltip("time_stamp:T", format="%d %b %H:%M"),
-                     alt.Tooltip("health_score:Q", format=".0f"), "top_sensors"])
-        thr = alt.Chart(pd.DataFrame({"y": [s.det.threshold_]})).mark_rule(
-            color=NEUTRAL, strokeDash=[5, 4]).encode(y="y:Q")
-        layers = ([band] if band is not None else []) + [line, thr]
-        st.markdown("**Health score** (dashed: alarm threshold)")
-        st.altair_chart(axis_style(alt.layer(*layers).properties(height=300)), width="stretch")
-        days = sorted(g["time_stamp"].dt.floor("D").unique())
-        day = st.select_slider("Inspect day", options=days, value=days[-1],
-                               format_func=lambda d: pd.Timestamp(d).strftime("%d %b"))
-        sel = g[g["time_stamp"].dt.floor("D") == day]
-        worst = sel.loc[sel["health_score"].idxmax()]
-        st.markdown(f"**Worst sample that day** · {worst['time_stamp']:%d %b %H:%M} · "
-                    f"health score {worst['health_score']:.0f} · {status_badge(bool(worst[alarm_col]))}")
-        hist = df.sort_values(t)
-        upto = hist[hist[t] <= worst[t]][s.required_columns]
-        st.altair_chart(contributions_chart(s.score(upto, top_n=6)["top_sensors"].iloc[-1]), width="stretch")
+        else:                                                     # labeled-states asset
+            truth = "fault_class" if "fault_class" in df else None
+            c1, c2, c3 = st.columns(3)
+            c1.metric("Samples", len(df))
+            c2.metric("In alarm", f"{df['alarm'].mean():.0%}")
+            if truth:
+                c3.metric("Diagnosis matches truth", f"{(df['diagnosis'] == df[truth]).mean():.1%}")
+            classes = sorted(df[truth].unique()) if truth else []
+            pick = st.radio("Show samples whose true condition is", ["all"] + classes, horizontal=True)
+            sub = df if pick == "all" else df[df[truth] == pick]
+            extra = [c for c in ("severity", "fault_size_in", "run", "sample") if c in df]
+            cols = s.cfg["regime_features"] + extra + ([truth] if truth else []) + \
+                ["alarm", "health_score", "diagnosis", "diagnosis_confidence", "top_sensors"]
+            st.dataframe(sub[cols].style.format({"health_score": "{:.1f}", "severity": "{:.0%}",
+                                                "diagnosis_confidence": "{:.0%}"}),
+                         width="stretch", height=260)
+            i = st.number_input("Inspect sample (row number above)", 0, len(sub) - 1, min(len(sub) - 1, len(sub) // 2))
+            row = sub.iloc[int(i)]
+            current, current_machine = sub.iloc[[int(i)]], None
+            st.markdown(f"### Sample {int(i)} &nbsp; {status_badge(bool(row['alarm']))}")
+            k1, k2, k3 = st.columns(3)
+            k1.metric("Health score", f"{row['health_score']:.1f}")
+            k1.caption(f"alarm above {s.det.threshold_:.1f}")
+            k2.metric("Diagnosis", row["diagnosis"])
+            k2.caption(f"{row['diagnosis_confidence']:.0%} confidence")
+            if truth:
+                k3.metric("Truth", row[truth])
+                if "severity" in row:
+                    k3.caption(f"severity {row['severity']:.0%} of the way to worst state")
+            sev = {c.removeprefix("severity_"): row[c] for c in df.columns if c.startswith("severity_")}
+            if sev:
+                comps = s.cfg.get("components", {})
+                st.markdown("**Estimated wear** &nbsp; " + " · ".join(
+                    f"{k} {np.clip((comps[k]['new'] - v) / (comps[k]['new'] - comps[k]['worst']), 0, 1):.0%} "
+                    f"of the way to worst (coefficient {v:.4f}, actual {row[comps[k]['column']]:.3f})"
+                    if k in comps else f"{k}: {v:.3g}" for k, v in sev.items()))
+            full = s.score(sub.iloc[[int(i)]][s.required_columns], top_n=6)["top_sensors"].iloc[0]
+            st.markdown("**What is driving the health score**")
+            st.altair_chart(contributions_chart(full), width="stretch")
 
-    else:                                                     # labeled-states asset
-        truth = "fault_class" if "fault_class" in df else None
-        c1, c2, c3 = st.columns(3)
-        c1.metric("Samples", len(df))
-        c2.metric("In alarm", f"{df['alarm'].mean():.0%}")
-        if truth:
-            c3.metric("Diagnosis matches truth", f"{(df['diagnosis'] == df[truth]).mean():.1%}")
-        classes = sorted(df[truth].unique()) if truth else []
-        pick = st.radio("Show samples whose true condition is", ["all"] + classes, horizontal=True)
-        sub = df if pick == "all" else df[df[truth] == pick]
-        extra = [c for c in ("severity", "fault_size_in", "run", "sample") if c in df]
-        cols = s.cfg["regime_features"] + extra + ([truth] if truth else []) + \
-            ["alarm", "health_score", "diagnosis", "diagnosis_confidence", "top_sensors"]
-        st.dataframe(sub[cols].style.format({"health_score": "{:.1f}", "severity": "{:.0%}",
-                                            "diagnosis_confidence": "{:.0%}"}),
-                     width="stretch", height=260)
-        i = st.number_input("Inspect sample (row number above)", 0, len(sub) - 1, min(len(sub) - 1, len(sub) // 2))
-        row = sub.iloc[int(i)]
-        st.markdown(f"### Sample {int(i)} &nbsp; {status_badge(bool(row['alarm']))}")
-        k1, k2, k3 = st.columns(3)
-        k1.metric("Health score", f"{row['health_score']:.1f}")
-        k1.caption(f"alarm above {s.det.threshold_:.1f}")
-        k2.metric("Diagnosis", row["diagnosis"])
-        k2.caption(f"{row['diagnosis_confidence']:.0%} confidence")
-        if truth:
-            k3.metric("Truth", row[truth])
-            if "severity" in row:
-                k3.caption(f"severity {row['severity']:.0%} of the way to worst state")
-        sev = {c.removeprefix("severity_"): row[c] for c in df.columns if c.startswith("severity_")}
-        if sev:
-            comps = s.cfg.get("components", {})
-            st.markdown("**Estimated wear** &nbsp; " + " · ".join(
-                f"{k} {np.clip((comps[k]['new'] - v) / (comps[k]['new'] - comps[k]['worst']), 0, 1):.0%} "
-                f"of the way to worst (coefficient {v:.4f}, actual {row[comps[k]['column']]:.3f})"
-                if k in comps else f"{k}: {v:.3g}" for k, v in sev.items()))
-        full = s.score(sub.iloc[[int(i)]][s.required_columns], top_n=6)["top_sensors"].iloc[0]
-        st.markdown("**What is driving the health score**")
-        st.altair_chart(contributions_chart(full), width="stretch")
+    # ---- safety risk -------------------------------------------------------------
+    with tab_risk:
+        sc = s.cfg.get("safety", {})
+        st.markdown(f"**System:** {sc.get('system', 'not mapped').replace('_', ' ')} · "
+                    f"{sc.get('redundancy', '?')} units installed, {sc.get('required', '?')} needed. "
+                    "Each failure mode the models can see is mapped to its ship-level effect (FMECA); "
+                    "likelihood is the chance it happens within the horizon.")
+        horizon = st.slider("Horizon (days)", 7, 90, 30)
+        reg = risk_register(current, s.b, horizon, machine=current_machine, latest_only=False)
+        if reg.empty:
+            st.success("No failure mode is currently above zero likelihood for the selected condition.")
+        else:
+            c1, c2, c3 = st.columns(3)
+            c1.metric("High-risk items", int((reg.risk == "high").sum()))
+            c2.metric("Medium-risk items", int((reg.risk == "medium").sum()))
+            c3.metric("Worst likelihood", f"{reg.p_fail.max():.0%}")
+            show = reg[["machine", "failure_mode", "effect_label", "severity", "p_fail", "risk", "action", "note"]]
+            show.columns = ["Machine", "Failure mode", "Ship-level effect", "Severity (1-4)", "Likelihood",
+                            "Risk", "Recommended action", "Why"]
+            st.dataframe(show.head(40).style.format({"Likelihood": "{:.1%}"}).map(
+                lambda v: f"color: {CRITICAL}; font-weight: 600" if v == "high" else "", subset=["Risk"]),
+                width="stretch", height=300, hide_index=True)
+            if s.b.get("rul_model") is not None and sc.get("redundancy", 1) > 1:
+                from faultwatch.safety import system_risk
+                n = int(sc["redundancy"])
+                machines = list(current_machine)
+                ships = {f"Ship {i // n + 1}": machines[i:i + n] for i in range(0, len(machines) - n + 1, n)}
+                sr = system_risk(reg, s.b, ships)
+                st.markdown(f"**Ship view** - machines grouped {n} per ship (illustrative); the function "
+                            f"is lost when fewer than {sc.get('required', 1)} remain")
+                st.dataframe(sr.head(10).style.format({"worst_unit_p_fail": "{:.1%}", "p_function_lost": "{:.2%}"}),
+                             width="stretch", hide_index=True)
+            top = reg.iloc[0]
+            st.markdown("---")
+            st.markdown(f"**Ask the incident copilot about the top item:** {top['machine']} · "
+                        f"{str(top['failure_mode']).replace('_', ' ')} → {top['effect_label'].lower()}")
+            cp = copilot()
+            if cp is None:
+                st.info("Incident corpus not built: `python scripts/download_data.py incidents`.")
+            elif st.button("What happened elsewhere, and what should we check?"):
+                mrow = current if current_machine is None else current[current_machine.values == top["machine"]]
+                sensors = mrow["top_sensors_raw"].iloc[0] if "top_sensors_raw" in mrow else {}
+                alert = {"component": None if top["failure_mode"] == "degradation" else top["failure_mode"],
+                         "top_sensors": sensors, "effect": top["effect"], "note": top["note"]}
+                with st.spinner("Searching 146 investigation reports..."):
+                    show_answer(cp.lessons_for_alert(alert, s.cfg))
 
-# ---- drift -----------------------------------------------------------------
-with tab_drift:
-    st.markdown("Checks whether the healthy baseline still describes this machine. It looks only at "
-                "samples the detector calls normal, so a developing fault is not mistaken for drift. "
-                "Try a simulated sensor recalibration:")
-    sensor = st.selectbox("Sensor", s.cfg["sensors"])
-    shift = st.slider("Recalibration offset (healthy standard deviations)", 0.0, 3.0, 0.0, 0.25)
-    demo = s.b["demo"].copy()
-    if s.cfg.get("time") in demo and s.cfg.get("asset_id") in demo:
-        a, t = s.cfg["asset_id"], s.cfg["time"]
-        late = demo[t] > demo.groupby(a)[t].transform("max") * 0.5   # step change mid-history
+    # ---- drift -----------------------------------------------------------------
+    with tab_drift:
+        st.markdown("Checks whether the healthy baseline still describes this machine. It looks only at "
+                    "samples the detector calls normal, so a developing fault is not mistaken for drift. "
+                    "Try a simulated sensor recalibration:")
+        sensor = st.selectbox("Sensor", s.cfg["sensors"])
+        shift = st.slider("Recalibration offset (healthy standard deviations)", 0.0, 3.0, 0.0, 0.25)
+        demo = s.b["demo"].copy()
+        if s.cfg.get("time") in demo and s.cfg.get("asset_id") in demo:
+            a, t = s.cfg["asset_id"], s.cfg["time"]
+            late = demo[t] > demo.groupby(a)[t].transform("max") * 0.5   # step change mid-history
+        else:
+            late = pd.Series(True, index=demo.index)
+        demo.loc[late, sensor] += shift * float(s.norm.global_std_[sensor])
+        rep = s.drift(demo)
+        st.markdown("### " + (":orange[**Retraining recommended**]" if rep["retrain_recommended"]
+                              else ":green[**Baseline still valid**]"))
+        for r in rep["reasons"]:
+            st.markdown(f"- {r}")
+        psi = pd.Series(rep["sensor_psi"], name="PSI").sort_values(ascending=False).rename_axis("sensor").reset_index()
+        bars = alt.Chart(psi).mark_bar(cornerRadiusEnd=4, height=14, color=SERIES[0]).encode(
+            x=alt.X("PSI:Q", title="Population stability index (normal samples vs training)"),
+            y=alt.Y("sensor:N", sort="-x", title=None), tooltip=["sensor", alt.Tooltip("PSI:Q", format=".3f")])
+        rule = alt.Chart(pd.DataFrame({"x": [0.25]})).mark_rule(color=NEUTRAL, strokeDash=[5, 4]).encode(x="x:Q")
+        st.altair_chart(axis_style((bars + rule).properties(height=22 * len(psi) + 30)), width="stretch")
+        st.caption(f"Dashed line = retraining trigger (PSI 0.25). {rep['samples_judged_normal']} of "
+                   f"{rep['samples']} samples judged normal; {rep['out_of_envelope_share']:.1%} outside the "
+                   "trained operating envelope.")
+
+    # ---- validation ------------------------------------------------------------
+    with tab_val:
+        rep_dir = Path("reports") / name
+        mfile = rep_dir / "metrics.json"
+        if mfile.exists():
+            metrics = json.loads(mfile.read_text())
+            for key in ("detection", "early_warning"):
+                if key in metrics:
+                    st.markdown("**Alarm comparison on held-out data**")
+                    st.dataframe(pd.DataFrame(metrics[key]).set_index("method"), width="stretch")
+            if "uncertainty" in metrics:
+                rows = []
+                for meth, r in metrics["uncertainty"].items():
+                    row = {"method": meth}
+                    for k, v in r.items():
+                        if isinstance(v, dict) and "estimate" in v:
+                            pct = v["estimate"] <= 1.0001 and v.get("ci_high", 0) <= 1.0001
+                            f = (lambda x: f"{x:.1%}") if pct else (lambda x: f"{x:.0f}")
+                            row[k.replace("_", " ")] = f"{f(v['estimate'])} [{f(v['ci_low'])}, {f(v['ci_high'])}]"
+                    vs = r.get("vs_reference")
+                    if vs:
+                        pv = vs.get("p_value", vs.get("warned_in_time", {}).get("p_value"))
+                        row["p vs FaultWatch"] = f"{pv:.2g}" if pv is not None else ""
+                    rows.append(row)
+                st.markdown("**With 95% confidence intervals** (resampling whole machines / recordings / "
+                            "events) and paired tests against FaultWatch")
+                st.dataframe(pd.DataFrame(rows).set_index("method"), width="stretch")
+            sel = metrics.get("model_selection")
+            if sel:
+                st.markdown("**Model families compared by grouped cross-validation**")
+                sels = sel if "candidates" not in sel else {"model": sel}
+                for k, v in sels.items():
+                    st.caption(f"{k}: in use `{v['used']}`, best by CV `{v['winner_by_cv']}`")
+                    st.dataframe(pd.DataFrame(v["candidates"]).set_index("model"), width="stretch")
+            for img in sorted(rep_dir.glob("*.png")):
+                st.image(str(img), caption=img.stem.replace("_", " "), width="stretch")
+            with st.expander("All metrics (JSON)"):
+                st.json(metrics)
+        else:
+            st.info("No report yet for this asset.")
+
+
+# ---- fleet safety outlook ----------------------------------------------------------------
+def _ci(v, fmt="{:.2f}"):
+    return f"{fmt.format(v['mean'])}  [{fmt.format(v['p2_5'])}, {fmt.format(v['p97_5'])}]"
+
+
+if page == "Fleet safety outlook":
+    st.header("Fleet safety outlook")
+    pp = Path("reports/ship_power_plant/metrics.json")
+    if pp.exists():
+        m = json.loads(pp.read_text())
+        sc = m["scenario"]
+        st.markdown(f"**Power-plant blackout risk** - {sc['ships']} ships x {sc['generator_sets_per_ship']} "
+                    f"generator sets, {sc['horizon_days']}-day plan, {sc['replicates']} simulated months. "
+                    "Generator sets are real engines with true and predicted remaining life; itinerary, "
+                    "demand and costs are assumptions in `configs/ship_power_plant.yaml`.")
+        pol = list(m["blackouts_per_100_voyages"])
+        table = pd.DataFrame({
+            "Blackouts / 100 voyages": [_ci(m["blackouts_per_100_voyages"][p]) for p in pol],
+            "Days without N+1 / 100 voyages": [_ci(m["no_margin_days_per_100_voyages"][p], "{:.1f}") for p in pol],
+            "In-service failures": [f"{m['in_service_failures'][p]['mean']:.1f}" for p in pol],
+            "Planned services": [f"{m['planned_services'][p]['mean']:.0f}" for p in pol],
+            "Cost / month": [f"${m['cost'][p]['mean'] / 1e6:.2f}M" for p in pol]}, index=pol)
+        st.dataframe(table, width="stretch")
+        st.caption("mean [2.5th, 97.5th percentile of simulated months]")
+        img = Path("reports/ship_power_plant/blackout_risk_by_policy.png")
+        if img.exists():
+            st.image(str(img), width="stretch")
+    ro = Path("reports/fleet_rollout/metrics.json")
+    if ro.exists():
+        m = json.loads(ro.read_text())
+        st.markdown("**How to prove it on real ships: pilot design**")
+        rr = m["true_rate_ratio"]
+        st.markdown(f"Expected effect (from the simulation): in-service failures x{rr['failures']:.2f}, "
+                    f"days without N+1 margin x{rr['no_margin_days']:.2f}.")
+        rows = []
+        for outcome, d in m["smallest_pilot_for_80pct_power"].items():
+            for design, v in d.items():
+                rows.append({"outcome": outcome.replace("_", " "), "design": design.replace("_", " "),
+                             "smallest pilot with 80% power": f"{v['ships']} ships x {v['months']} months"
+                             if v else "not reached (64 ships x 18 months)"})
+        st.dataframe(pd.DataFrame(rows), width="stretch", hide_index=True)
+        ex = m["example_pilot"]
+        r = ex["results"]["no_margin_days"]
+        st.markdown(f"Example analysis of one simulated {ex['ships']}-ship, {ex['months']}-month stepped-wedge "
+                    f"pilot: rate ratio {r['twfe_poisson']['rate_ratio']:.2f} "
+                    f"(95% CI {r['twfe_poisson']['ci_low']:.2f}-{r['twfe_poisson']['ci_high']:.2f}), "
+                    f"randomization-inference p = {r['randomization_inference_p']:.3f}. See `docs/pilot_design.md`.")
+        img = Path("reports/fleet_rollout/pilot_power.png")
+        if img.exists():
+            st.image(str(img), width="stretch")
+
+# ---- incident copilot ----------------------------------------------------------------------
+if page == "Incident copilot":
+    st.header("Machinery incident copilot")
+    cp = copilot()
+    if cp is None:
+        st.info("Incident corpus not built: `python scripts/download_data.py incidents`.")
+        st.stop()
+    st.caption(f"{len(cp.r.manifest)} machinery-casualty investigation reports (NTSB, MAIB, NSIA) · "
+               f"hybrid retrieval (BM25 + {cp.r.dense_name}) · answers cite the passages they use · "
+               f"LLM: {cp.llm.name}")
+    q = st.text_area("Describe the symptom, alarm or failure",
+                     "Generator tripped on low lube oil pressure while the ship was rolling in heavy weather")
+    if st.button("Search the casualty reports", type="primary"):
+        with st.spinner("Searching..."):
+            show_answer(cp.answer(q))
+    st.markdown("---")
+    st.markdown("**Triage a failure report** - structured fields for the safety register")
+    n = st.text_area("Narrative", "Fuel sprayed from a cracked injector line onto the turbocharger and ignited; "
+                                  "the engine room was evacuated and CO2 released.", height=90)
+    if st.button("Classify"):
+        st.json(cp.triage(n))
+    ev = Path("reports/incident_copilot/metrics.json")
+    if ev.exists():
+        m = json.loads(ev.read_text())
+        with st.expander("Copilot evaluation (gold question set)"):
+            r = m["retrieval"]
+            st.dataframe(pd.DataFrame({k: {kk: vv for kk, vv in v.items() if not kk.startswith("by_style")}
+                                       for k, v in r.items()}).T, width="stretch")
+            st.json({"answers": m["answers"], "triage": m["triage"]})
+
+# ---- model health ----------------------------------------------------------------------------
+def _simulate_operations(store: MonitorStore, seed: int = 7):
+    """Two weeks of simulated alert handling on the demo data (clearly labelled as simulated):
+    operators acknowledge most alerts; work orders confirm a fault when the demo truth says so."""
+    import time as _t
+    rng = np.random.default_rng(seed)
+    now = _t.time()
+    for nm, sc_ in S.items():
+        d = scored(nm)
+        alarm = d.get("alarm_confirmed", d["alarm"]).fillna(False).astype(bool)
+        al = d[alarm].sample(min(int(alarm.sum()), 40), random_state=seed)
+        if al.empty:
+            continue
+        truth = (al["true_rul"] < 60) if "true_rul" in al else (al["fault_class"] != sc_.cfg.get(
+            "healthy_label", "healthy")) if "fault_class" in al else (al["tier"] != "normal_wear") \
+            if "tier" in al else al.get("event_window", pd.Series(True, index=al.index))
+        keep = al[["health_score"] + [c for c in ("diagnosis",) if c in al]].copy()
+        if sc_.cfg.get("asset_id") in al:
+            keep["machine"] = al[sc_.cfg["asset_id"]].values
+        ids = store.record_alerts(nm, keep.assign(slice=nm, ts=now - rng.uniform(0, 14 * 86400, len(al))))
+        for i, t in zip(ids, truth.astype(bool)):
+            if rng.random() < 0.8:
+                store.ack(i, "work_order" if t else rng.choice(["false_alarm", "deferred"]), "sim")
+                store.label(i, "fault_confirmed" if t else "no_fault_found")
+        for _ in range(30):
+            store.log_call("assets/score", nm, rows=50, latency_ms=float(rng.gamma(4, 6)),
+                           cpu_ms=float(rng.gamma(3, 4)))
+
+
+if page == "Model health":
+    st.header("Model health")
+    src = st.radio("Data source", ["Live API store (monitoring/monitor.db)", "Simulated two weeks (demo)"],
+                   horizontal=True)
+    if src.startswith("Live"):
+        store = MonitorStore("monitoring/monitor.db")
     else:
-        late = pd.Series(True, index=demo.index)
-    demo.loc[late, sensor] += shift * float(s.norm.global_std_[sensor])
-    rep = s.drift(demo)
-    st.markdown("### " + (":orange[**Retraining recommended**]" if rep["retrain_recommended"]
-                          else ":green[**Baseline still valid**]"))
-    for r in rep["reasons"]:
-        st.markdown(f"- {r}")
-    psi = pd.Series(rep["sensor_psi"], name="PSI").sort_values(ascending=False).rename_axis("sensor").reset_index()
-    bars = alt.Chart(psi).mark_bar(cornerRadiusEnd=4, height=14, color=SERIES[0]).encode(
-        x=alt.X("PSI:Q", title="Population stability index (normal samples vs training)"),
-        y=alt.Y("sensor:N", sort="-x", title=None), tooltip=["sensor", alt.Tooltip("PSI:Q", format=".3f")])
-    rule = alt.Chart(pd.DataFrame({"x": [0.25]})).mark_rule(color=NEUTRAL, strokeDash=[5, 4]).encode(x="x:Q")
-    st.altair_chart(axis_style((bars + rule).properties(height=22 * len(psi) + 30)), width="stretch")
-    st.caption(f"Dashed line = retraining trigger (PSI 0.25). {rep['samples_judged_normal']} of "
-               f"{rep['samples']} samples judged normal; {rep['out_of_envelope_share']:.1%} outside the "
-               "trained operating envelope.")
-
-# ---- validation ------------------------------------------------------------
-with tab_val:
-    rep_dir = Path("reports") / name
-    mfile = rep_dir / "metrics.json"
-    if mfile.exists():
-        metrics = json.loads(mfile.read_text())
-        for key in ("detection", "early_warning"):
-            if key in metrics:
-                st.markdown("**Alarm comparison on held-out data**")
-                st.dataframe(pd.DataFrame(metrics[key]).set_index("method"), width="stretch")
-        for img in sorted(rep_dir.glob("*.png")):
-            st.image(str(img), caption=img.stem.replace("_", " "), width="stretch")
-        with st.expander("All metrics (JSON)"):
-            st.json(metrics)
-    else:
-        st.info("No report yet for this asset.")
+        store = MonitorStore("monitoring/demo_monitor.db")
+        if store.summary()["adoption"].get("alerts", 0) == 0:
+            _simulate_operations(store)
+        st.caption("Simulated: alerts are real demo alarms; acknowledgements and work-order outcomes are drawn "
+                   "at random (80% acknowledged, outcome = demo truth). For showing the panel, not for results.")
+    summ = store.summary()
+    sv, ad, ac = summ["service"], summ["adoption"], summ["accuracy"]
+    c = st.columns(5)
+    c[0].metric("Scoring calls", sv.get("calls", 0))
+    c[1].metric("Latency p95", f"{sv.get('latency_ms_p95', 0):.0f} ms")
+    c[2].metric("Cost", f"${sv.get('cost_usd_total', 0):.4f}")
+    c[3].metric("Alerts acknowledged", f"{ad.get('ack_rate', 0):.0%}" if ad.get("alerts") else "-")
+    c[4].metric("Alert precision", f"{ac['precision']:.0%}" if ac.get("labelled_alerts") else "-",
+                help="share of labelled alerts where the work order found a fault")
+    if summ["slices"].get("per_slice"):
+        st.markdown("**False-alarm share by asset type** (slice parity)")
+        st.dataframe(pd.DataFrame(summ["slices"]["per_slice"]).T.style.format(
+            {"false_alarm_share": "{:.0%}"}), width="stretch")
+    drift_actions = []
+    for nm, sc_ in S.items():
+        dr = sc_.drift(sc_.b["demo"])
+        drift_actions.append({"asset": nm, "retrain_recommended": dr["retrain_recommended"],
+                              "worst_psi": max(dr["sensor_psi"].values()) if dr["sensor_psi"] else None,
+                              "out_of_envelope": dr["out_of_envelope_share"]})
+    st.markdown("**Baseline drift on the latest data, per asset type**")
+    st.dataframe(pd.DataFrame(drift_actions).set_index("asset"), width="stretch")
+    st.caption("Here the 'latest data' is each asset's held-out demo set, which mixes healthy and faulty "
+               "samples: faults the detector cannot see (e.g. Tennessee Eastman faults 3, 9, 15) pass the "
+               "normal-sample filter and show up as drift. On a live feed this check runs on recent operation.")
+    st.markdown("**Recommended actions**")
+    any_drift = next((d for d in drift_actions if d["retrain_recommended"]), None)
+    for r in retrain_policy({"retrain_recommended": bool(any_drift),
+                             "reasons": [f"{any_drift['asset']} baseline drifted"] if any_drift else []}, summ):
+        st.markdown(f"- **{r['action'].replace('_', ' ')}** - {r['why']}")
+    preds = Path("reports/naval_gas_turbine/predictions.csv.gz")
+    if preds.exists():
+        pdf = pd.read_csv(preds)
+        st.markdown("**Offline bias check: gas-turbine alarm by operating point** (held-out validation data)")
+        sp = slice_parity(pdf[pdf.fault | pdf.healthy], "lever_pos", "FaultWatch (multivariate, load-aware)", "fault")
+        st.dataframe(sp.set_index("slice").style.format({"false_alarm_rate": "{:.1%}", "fa_ci_high": "{:.1%}",
+                                                         "detection_rate": "{:.1%}", "det_ci_low": "{:.1%}"}),
+                     width="stretch")
+        st.caption("A flagged slice detects >15 points less or false-alarms >5 points more than the best one.")
