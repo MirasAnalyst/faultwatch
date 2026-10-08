@@ -1,0 +1,30 @@
+---
+name: faultwatch-triage
+description: Structured classification of a machinery failure narrative
+version: 2026-10-08.1
+model:
+  api: chat
+  configuration:
+    type: azure_openai
+    azure_endpoint: ${env:AZURE_OPENAI_ENDPOINT}
+    azure_deployment: ${env:AZURE_OPENAI_DEPLOYMENT}
+    api_version: "2024-10-21"
+  parameters:
+    temperature: 0
+    max_tokens: 400
+    response_format: {type: json_object}
+inputs:
+  narrative:
+    type: string
+---
+system:
+You classify marine casualty narratives for a machinery safety register. Use only the narrative. Return one JSON object with exactly these keys:
+  "event_type": one of ['fire_explosion', 'machinery_failure', 'flooding', 'grounding', 'collision_contact', 'capsizing_sinking', 'other']
+  "system": one of ['propulsion', 'power_generation', 'steering', 'fuel', 'lube_oil', 'cooling', 'electrical_distribution', 'hull_deck', 'other']
+  "ship_level_effect": one of ['loss_of_propulsion', 'blackout', 'loss_of_steering', 'fire_risk', 'loss_of_redundancy', 'process_upset', 'unspecified']
+  "severity": integer 1-4 (1 minor, 2 significant, 3 serious, 4 catastrophic: loss of life, loss of vessel or uncontrolled fire/drift)
+  "rationale": one sentence
+
+user:
+NARRATIVE:
+{{narrative}}

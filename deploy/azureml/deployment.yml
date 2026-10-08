@@ -1,0 +1,18 @@
+# MLflow model registered by `python run.py configs/turbofan_cmapss.yaml --mlflow`
+# (tracking.FaultWatchModel pyfunc). Azure ML serves MLflow models without a scoring script;
+# score.py + environment.yml below are the custom-container alternative.
+$schema: https://azuremlschemas.azureedge.net/latest/managedOnlineDeployment.schema.json
+name: blue
+endpoint_name: faultwatch-gt-fleet
+model: azureml:faultwatch-turbofan_cmapss_fd001@latest
+instance_type: Standard_DS3_v2
+instance_count: 1
+request_settings:
+  request_timeout_ms: 30000
+  max_concurrent_requests_per_instance: 4
+liveness_probe:
+  initial_delay: 30
+data_collector:              # model monitoring: inputs/outputs to the workspace for drift jobs
+  collections:
+    model_inputs: {enabled: "true"}
+    model_outputs: {enabled: "true"}

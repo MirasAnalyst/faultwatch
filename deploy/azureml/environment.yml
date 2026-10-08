@@ -1,0 +1,8 @@
+name: faultwatch
+channels: [conda-forge]
+dependencies:
+  - python=3.12
+  - pip
+  - pip:
+      - azureml-inference-server-http
+      - faultwatch @ git+https://github.com/MirasAnalyst/faultwatch.git

@@ -50,7 +50,10 @@ class FaultWatchModel(mlflow.pyfunc.PythonModel):
         return out
 
 
-def log_run(cfg: dict, metrics: dict, out_dir: Path, bundle_path: Path, register: bool = True):
+def log_run(cfg: dict, metrics: dict, out_dir: Path, bundle_path: Path, register: bool = True,
+            registered_name: str | None = None):
+    """registered_name: model registry name; default `faultwatch-<asset>` (workspace registry).
+    On Databricks Unity Catalog pass a three-level name, e.g. marine_ops.faultwatch.faultwatch_gt."""
     mlflow.set_tracking_uri(os.environ.get("MLFLOW_TRACKING_URI", DEFAULT_URI))
     mlflow.set_experiment("faultwatch")
     with mlflow.start_run(run_name=cfg["name"]) as run:
@@ -67,5 +70,12 @@ def log_run(cfg: dict, metrics: dict, out_dir: Path, bundle_path: Path, register
         mlflow.pyfunc.log_model(
             name="model", python_model=FaultWatchModel(),
             artifacts={"bundle": str(bundle_path)}, code_paths=[str(root)],
-            registered_model_name=f"faultwatch-{cfg['name']}" if register else None)
+            registered_model_name=(registered_name or f"faultwatch-{cfg['name']}") if register else None)
         return run.info.run_id
+
+
+def bundle_from_registry(model_uri: str) -> str:
+    """Local path of the scoring bundle inside a registered model, e.g.
+    models:/marine_ops.faultwatch.faultwatch_turbofan_cmapss_fd001@champion"""
+    root = Path(mlflow.artifacts.download_artifacts(model_uri))
+    return str(next(root.glob("artifacts/*.joblib")))

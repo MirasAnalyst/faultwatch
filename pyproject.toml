@@ -36,7 +36,7 @@ spark = ["pyspark>=3.5"]
 dev = ["pytest>=7.0", "httpx>=0.27", "ruff>=0.6"]
 
 [tool.setuptools.packages.find]
-include = ["faultwatch*"]
+include = ["faultwatch*", "pipelines*"]
 
 [tool.pytest.ini_options]
 pythonpath = [".", "tests"]

@@ -1,0 +1,4 @@
+$schema: https://azuremlschemas.azureedge.net/latest/managedOnlineEndpoint.schema.json
+name: faultwatch-gt-fleet
+description: FaultWatch scoring for the gas-turbine generator fleet (health score, alarm, remaining life)
+auth_mode: key

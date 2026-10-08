@@ -1,0 +1,106 @@
+# Databricks Asset Bundle: FaultWatch fleet jobs.
+#   databricks bundle validate -t dev
+#   databricks bundle deploy   -t dev
+#   databricks bundle run faultwatch_daily -t dev
+# Not deployed from this repo (no workspace); written against the bundle schema and
+# exercised locally through the same code paths (pipelines/features_spark.py, run.py).
+bundle:
+  name: faultwatch
+
+variables:
+  catalog:
+    description: Unity Catalog catalog holding fleet machinery data
+    default: marine_ops
+  schema:
+    description: Schema for FaultWatch tables
+    default: faultwatch
+  alert_email:
+    description: Who hears about failed runs
+    default: fleet-reliability@example.com
+
+artifacts:
+  faultwatch_wheel:
+    type: whl
+    path: .
+    build: python -m pip wheel --no-deps -w dist .
+
+resources:
+  jobs:
+    faultwatch_daily:
+      name: faultwatch-daily-fleet-scoring
+      description: >
+        Ingest the historian extract, gate it on data quality, build features in Spark,
+        score every machine with the registered model, refresh the safety-risk register
+        and the monitoring tables.
+      schedule:
+        quartz_cron_expression: "0 0 5 * * ?"
+        timezone_id: America/New_York
+      email_notifications:
+        on_failure: ["${var.alert_email}"]
+      job_clusters:
+        - job_cluster_key: fleet
+          new_cluster:
+            spark_version: 15.4.x-scala2.12
+            node_type_id: Standard_D4ds_v5
+            num_workers: 2
+            data_security_mode: SINGLE_USER
+      parameters:
+        - {name: catalog, default: "${var.catalog}"}
+        - {name: schema, default: "${var.schema}"}
+      tasks:
+        - task_key: ingest
+          job_cluster_key: fleet
+          notebook_task: {notebook_path: ./notebooks/01_ingest.py}
+          libraries: [{whl: ./dist/*.whl}]
+        - task_key: quality_and_features
+          depends_on: [{task_key: ingest}]
+          job_cluster_key: fleet
+          notebook_task: {notebook_path: ./notebooks/02_quality_features.py}
+          libraries: [{whl: ./dist/*.whl}]
+        - task_key: score_and_risk
+          depends_on: [{task_key: quality_and_features}]
+          job_cluster_key: fleet
+          notebook_task: {notebook_path: ./notebooks/03_score_risk.py}
+          libraries: [{whl: ./dist/*.whl}]
+        - task_key: monitor
+          depends_on: [{task_key: score_and_risk}]
+          job_cluster_key: fleet
+          notebook_task: {notebook_path: ./notebooks/04_monitor.py}
+          libraries: [{whl: ./dist/*.whl}]
+
+    faultwatch_retrain:
+      name: faultwatch-retrain
+      description: >
+        Refit every asset type on the latest healthy history, log to MLflow and register a new
+        model version in Unity Catalog. Triggered weekly or by the monitor's retrain policy.
+      schedule:
+        quartz_cron_expression: "0 0 6 ? * SUN"
+        timezone_id: America/New_York
+        pause_status: PAUSED
+      job_clusters:
+        - job_cluster_key: train
+          new_cluster:
+            spark_version: 15.4.x-cpu-ml-scala2.12
+            node_type_id: Standard_D8ds_v5
+            num_workers: 0
+            spark_conf: {spark.master: "local[*]"}
+            custom_tags: {ResourceClass: SingleNode}
+      tasks:
+        - task_key: train
+          job_cluster_key: train
+          notebook_task: {notebook_path: ./notebooks/10_train_register.py}
+          libraries: [{whl: ./dist/*.whl}]
+
+targets:
+  dev:
+    mode: development
+    default: true
+    workspace:
+      host: https://adb-0000000000000000.0.azuredatabricks.net
+  prod:
+    mode: production
+    workspace:
+      host: https://adb-0000000000000000.0.azuredatabricks.net
+      root_path: /Workspace/Shared/.bundle/${bundle.name}/${bundle.target}
+    variables:
+      schema: faultwatch_prod

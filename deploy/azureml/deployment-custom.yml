@@ -1,0 +1,13 @@
+$schema: https://azuremlschemas.azureedge.net/latest/managedOnlineDeployment.schema.json
+name: green
+endpoint_name: faultwatch-gt-fleet
+model:
+  path: ../../models/turbofan_cmapss_fd001.joblib
+code_configuration:
+  code: .
+  scoring_script: score.py
+environment:
+  conda_file: environment.yml
+  image: mcr.microsoft.com/azureml/openmpi4.1.0-ubuntu22.04:latest
+instance_type: Standard_DS3_v2
+instance_count: 1
