@@ -1,0 +1,39 @@
+# Scenario model: blackout risk on a cruise fleet's power plants under five maintenance policies.
+# Generator sets = the 100 unseen C-MAPSS engines (true and FaultWatch-predicted remaining life,
+# from reports/turbofan_cmapss_fd001). Everything else here is an ASSUMPTION - change it to match
+# a real fleet.
+name: ship_power_plant
+short_name: ship power plant
+description: Cruise-fleet power plant blackout simulation (generator sets from the C-MAPSS fleet)
+dataset: cmapss
+experiment: power_plant
+sensors: []
+source: {asset: turbofan_cmapss_fd001, data_dir: data/cmapss, subset: FD001}
+
+horizon: 30                 # days planned ahead (one C-MAPSS cycle read as one running day)
+sets_per_ship: 4            # diesel-electric / COGES plants typically carry 4-6 generator sets
+itinerary:
+  pattern: [port, sea, port, port, sea, port, sea]   # a 7-night Caribbean loop
+  heavy_weather_prob: 0.15  # share of sea days with heavy weather
+demand:                     # generator sets needed online
+  port: 1                   # hotel load alongside
+  sea: 2                    # propulsion + hotel at service speed
+  manoeuvring: 3            # leaving / arriving port: thrusters, N+1 by procedure
+  heavy_weather: 3
+repair_days: 5              # corrective repair after an in-service failure
+service_days: 1             # planned service
+
+time_based: {life_quantile: 0.1}   # service sets older than the 10th percentile of fleet life
+
+maintenance:
+  ship_capacity_per_day: 1  # engine-room crew can take one set down per day
+  fleet_capacity_per_day: 3 # the existing fleet plan's shore-crew limit
+  preventive_cost: 20000
+  failure_cost: 250000      # corrective repair + lost availability
+  wasted_life_cost: 150
+  blackout_cost: 2000000    # safety consequence: drift, emergency response, itinerary loss
+  p_blackout_given_failure: 0.15   # planner's prior that an in-service trip turns into a blackout
+  max_failure_risk: 0.10    # never plan a set to run past a 10% chance of failing first
+
+replicates: 200
+seed: 42

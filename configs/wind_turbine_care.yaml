@@ -28,4 +28,12 @@ detector: {method: mahalanobis, quantile: 0.999, persistence: 6, calibration: bl
 
 demo_event: 40                # turbine 10 generator bearing failure -> API / dashboard demo
 plot_events: [40, 84, 0]     # generator bearing (caught), hydraulic (caught), generator bearing (missed)
+
+# Ship-level consequence (faultwatch/safety.py). Analog: rotating generating plant under varying load.
+safety:
+  system: generating_plant
+  redundancy: 1
+  required: 1
+  failure_modes:
+    degradation: {effect: loss_of_redundancy, severity: 2, note: "component overheating ahead of failure; generator out of service"}
 seed: 42

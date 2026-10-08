@@ -1,0 +1,27 @@
+# Pilot design: how would a fleet prove FaultWatch reduces machinery failures?
+# True effect sizes are read from reports/ship_power_plant (time-based vs FaultWatch
+# itinerary-aware); `rates` below is the fallback when that report does not exist.
+name: fleet_rollout
+short_name: fleet pilot design
+description: Stepped-wedge vs parallel A/B pilot designs for a fleet rollout (simulated)
+dataset: none
+experiment: rollout
+sensors: []
+rates_from: ship_power_plant
+rates:                      # events per ship-month (fallback)
+  failures: {control: 0.06, treated: 0.03}
+  no_margin_days: {control: 0.6, treated: 0.07}
+
+simulation:
+  ship_frailty_cv: 0.5      # ships differ (age, trade, crew): rate multiplier with 50% CV
+  seasonal_amplitude: 0.3   # fleet-wide seasonal swing (hurricane season, heat) - a naive
+                            # before/after comparison would mistake it for an effect
+
+pilot: {ships: 24, months: 12, waves: 4}     # the example pilot analysed in full
+randomization_inference_draws: 200
+
+power:
+  ships: [8, 16, 24, 32, 48, 64]
+  months: [6, 12, 18]
+  trials: 100
+seed: 42

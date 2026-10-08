@@ -26,6 +26,10 @@ early_life_fraction: 0.4          # an alarm in the first 40% of life counts as 
 rul:
   cap: 125                        # standard piecewise-linear RUL target
   trend_window: 20
+  model: gbm
+
+# Remaining-life regressors compared by CV grouped on training engines.
+model_selection: {candidates: [gbm, xgb, catboost, linear], folds: 5, apply: false}
 
 maintenance:
   horizon: 30                     # cycles (read as days: ~1 flight or run per day)
@@ -33,4 +37,13 @@ maintenance:
   preventive_cost: 20000
   failure_cost: 250000
   wasted_life_cost: 150           # per cycle of useful life thrown away
+
+# Ship-level consequence (faultwatch/safety.py). Analog: a fleet of gas-turbine generator sets;
+# a ship needs 2 of its 4 sets online at sea, so one failure removes margin, two cause a blackout.
+safety:
+  system: power_generation
+  redundancy: 4
+  required: 2
+  failure_modes:
+    degradation: {effect: blackout, severity: 4, note: "HPC degradation -> generator set trips; with a second unit down, blackout"}
 seed: 42

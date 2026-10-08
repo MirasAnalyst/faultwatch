@@ -37,3 +37,18 @@ baseline_alarm_sensor: hpt_exit_temp
 detector: {method: mahalanobis, quantile: 0.99}
 test_fraction: 0.3
 seed: 42
+
+# Classifier families compared by grouped CV on the training decay states.
+# apply: false keeps the configured model (LightGBM) and only reports the comparison.
+model_selection: {candidates: [gbm, xgb, catboost, logistic], folds: 5, apply: false}
+
+# Ship-level consequence (faultwatch/safety.py). Analog: the LM2500 gas turbines of a
+# COGES plant (Radiance / Millennium class); two turbines, one is enough to keep way on.
+safety:
+  system: gas_turbine_propulsion
+  redundancy: 2
+  required: 1
+  failure_modes:
+    compressor: {effect: loss_of_propulsion, severity: 3, note: "compressor fouling/decay -> power derate, surge risk"}
+    turbine:    {effect: loss_of_propulsion, severity: 3, note: "turbine decay -> high exhaust temp, trip on overtemperature"}
+    combined:   {effect: loss_of_propulsion, severity: 4, note: "compressor + turbine decay -> trip likely under load"}

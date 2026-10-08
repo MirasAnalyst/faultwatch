@@ -22,3 +22,15 @@ detector:
   persistence: 3            # 3 samples = 9 minutes
   calibration: blocked      # samples are autocorrelated: calibrate on held-out time blocks
 seed: 42
+
+# Classifier families compared by grouped CV. Each training run holds one fault, so
+# folds are contiguous time blocks of every run (5 per run), not whole runs.
+model_selection: {candidates: [gbm, xgb, catboost, logistic], folds: 5, time_blocks: 5, apply: false}
+
+# Ship-level consequence (faultwatch/safety.py). Analog: fuel-treatment / process systems.
+safety:
+  system: process_plant
+  redundancy: 1
+  required: 1
+  failure_modes:
+    "*": {effect: process_upset, severity: 2, note: "process upset -> off-spec fuel, trip of consumers"}

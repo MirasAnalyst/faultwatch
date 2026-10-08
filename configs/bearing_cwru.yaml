@@ -26,4 +26,14 @@ severity: {defect_size_in: fault_size_in}
 classifier: {model: logistic, features: [env_bpfi, env_bpfo, env_bsf]}
 
 detector: {method: mahalanobis, quantile: 0.99, calibration: blocked}
+
+# Ship-level consequence (faultwatch/safety.py). Analog: propulsion-motor / Azipod bearings.
+safety:
+  system: propulsion_motor
+  redundancy: 2
+  required: 1
+  failure_modes:
+    inner_race: {effect: loss_of_propulsion, severity: 3, note: "bearing spall -> seizure, pod out of service"}
+    outer_race: {effect: loss_of_propulsion, severity: 3, note: "bearing spall -> seizure, pod out of service"}
+    ball:       {effect: loss_of_propulsion, severity: 3, note: "rolling-element damage -> overheating, seizure"}
 seed: 42

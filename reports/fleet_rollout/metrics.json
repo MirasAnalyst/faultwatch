@@ -1,0 +1,126 @@
+{
+  "dataset": "Stepped-wedge vs parallel A/B pilot designs for a fleet rollout (simulated)",
+  "true_rates_per_ship_month": {
+    "failures": {
+      "control": 0.08106666666666666,
+      "treated": 0.04154666666666666
+    },
+    "no_margin_days": {
+      "control": 0.5211713173333333,
+      "treated": 0.060455061333333344
+    },
+    "source": "reports/ship_power_plant/metrics.json"
+  },
+  "true_rate_ratio": {
+    "failures": 0.5125,
+    "no_margin_days": 0.11599844297391984
+  },
+  "example_pilot": {
+    "ships": 24,
+    "months": 12,
+    "waves": 4,
+    "results": {
+      "failures": {
+        "twfe_poisson": {
+          "rate_ratio": 0.12518990515011513,
+          "ci_low": 0.019636020846830957,
+          "ci_high": 0.7981511363094829,
+          "p_value": 0.02791317541476718
+        },
+        "randomization_inference_p": 0.03482587064676617,
+        "naive_after_vs_before_ratio": 0.38461538461538464,
+        "events": 18
+      },
+      "no_margin_days": {
+        "twfe_poisson": {
+          "rate_ratio": 0.14724799430656751,
+          "ci_low": 0.05662458523382631,
+          "ci_high": 0.38290738444746436,
+          "p_value": 8.53990469928374e-05
+        },
+        "randomization_inference_p": 0.009950248756218905,
+        "naive_after_vs_before_ratio": 0.15625000000000003,
+        "events": 74
+      }
+    }
+  },
+  "smallest_pilot_for_80pct_power": {
+    "failures": {
+      "stepped_wedge": null,
+      "parallel_ab_cuped": null,
+      "parallel_ab": null
+    },
+    "no_margin_days": {
+      "stepped_wedge": {
+        "ships": 24,
+        "months": 6,
+        "power": 0.88
+      },
+      "parallel_ab_cuped": {
+        "ships": 16,
+        "months": 6,
+        "power": 0.89
+      },
+      "parallel_ab": {
+        "ships": 16,
+        "months": 6,
+        "power": 0.93
+      }
+    }
+  },
+  "false_positive_rate_at_alpha_0.05": {
+    "failures": {
+      "stepped_wedge": {
+        "8": 0.05,
+        "16": 0.02,
+        "24": 0.01,
+        "32": 0.05,
+        "48": 0.02,
+        "64": 0.06
+      },
+      "parallel_ab_cuped": {
+        "8": 0.05,
+        "16": 0.04,
+        "24": 0.03,
+        "32": 0.06,
+        "48": 0.07,
+        "64": 0.05
+      },
+      "parallel_ab": {
+        "8": 0.04,
+        "16": 0.04,
+        "24": 0.02,
+        "32": 0.04,
+        "48": 0.09,
+        "64": 0.03
+      }
+    },
+    "no_margin_days": {
+      "stepped_wedge": {
+        "8": 0.1,
+        "16": 0.06,
+        "24": 0.03,
+        "32": 0.1,
+        "48": 0.04,
+        "64": 0.06
+      },
+      "parallel_ab_cuped": {
+        "8": 0.03,
+        "16": 0.03,
+        "24": 0.03,
+        "32": 0.03,
+        "48": 0.06,
+        "64": 0.05
+      },
+      "parallel_ab": {
+        "8": 0.04,
+        "16": 0.04,
+        "24": 0.02,
+        "32": 0.06,
+        "48": 0.08,
+        "64": 0.07
+      }
+    }
+  },
+  "power_trials_per_cell": 100
+}

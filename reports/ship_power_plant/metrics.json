@@ -1,0 +1,158 @@
+{
+  "dataset": "Cruise-fleet power plant blackout simulation (generator sets from the C-MAPSS fleet)",
+  "scenario": {
+    "ships": 25,
+    "generator_sets_per_ship": 4,
+    "horizon_days": 30,
+    "voyages_per_ship": 4.29,
+    "replicates": 200,
+    "rul_model_error_days": 10.6,
+    "time_based_age_limit_cycles": 154.9,
+    "note": "simulation: itinerary, demand, durations and costs are assumptions (see config)"
+  },
+  "blackouts_per_100_voyages": {
+    "Run to failure": {
+      "mean": 3.178000000000001,
+      "p2_5": 0.0,
+      "p97_5": 7.466666666666667
+    },
+    "Time-based (age limit)": {
+      "mean": 2.706666666666667,
+      "p2_5": 0.9100000000000005,
+      "p97_5": 4.690000000000006
+    },
+    "FaultWatch plan (fleet MILP)": {
+      "mean": 0.32199999999999995,
+      "p2_5": 0.0,
+      "p97_5": 1.8666666666666667
+    },
+    "FaultWatch, itinerary-aware": {
+      "mean": 0.0,
+      "p2_5": 0.0,
+      "p97_5": 0.0
+    },
+    "Perfect foresight": {
+      "mean": 0.0,
+      "p2_5": 0.0,
+      "p97_5": 0.0
+    }
+  },
+  "no_margin_days_per_100_voyages": {
+    "Run to failure": {
+      "mean": 39.05533333333333,
+      "p2_5": 29.843333333333334,
+      "p97_5": 45.733333333333334
+    },
+    "Time-based (age limit)": {
+      "mean": 11.988666666666667,
+      "p2_5": 7.466666666666667,
+      "p97_5": 15.866666666666667
+    },
+    "FaultWatch plan (fleet MILP)": {
+      "mean": 12.418,
+      "p2_5": 7.443333333333334,
+      "p97_5": 17.733333333333334
+    },
+    "FaultWatch, itinerary-aware": {
+      "mean": 1.390666666666667,
+      "p2_5": 0.9333333333333333,
+      "p97_5": 2.823333333333339
+    },
+    "Perfect foresight": {
+      "mean": 0.0,
+      "p2_5": 0.0,
+      "p97_5": 0.0
+    }
+  },
+  "in_service_failures": {
+    "Run to failure": {
+      "mean": 25.0,
+      "p2_5": 25.0,
+      "p97_5": 25.0
+    },
+    "Time-based (age limit)": {
+      "mean": 2.0,
+      "p2_5": 2.0,
+      "p97_5": 2.0
+    },
+    "FaultWatch plan (fleet MILP)": {
+      "mean": 1.0,
+      "p2_5": 1.0,
+      "p97_5": 1.0
+    },
+    "FaultWatch, itinerary-aware": {
+      "mean": 1.025,
+      "p2_5": 1.0,
+      "p97_5": 1.0250000000000057
+    },
+    "Perfect foresight": {
+      "mean": 0.0,
+      "p2_5": 0.0,
+      "p97_5": 0.0
+    }
+  },
+  "planned_services": {
+    "Run to failure": {
+      "mean": 0.0,
+      "p2_5": 0.0,
+      "p97_5": 0.0
+    },
+    "Time-based (age limit)": {
+      "mean": 59.0,
+      "p2_5": 59.0,
+      "p97_5": 59.0
+    },
+    "FaultWatch plan (fleet MILP)": {
+      "mean": 29.0,
+      "p2_5": 29.0,
+      "p97_5": 29.0
+    },
+    "FaultWatch, itinerary-aware": {
+      "mean": 28.975,
+      "p2_5": 28.975,
+      "p97_5": 29.0
+    },
+    "Perfect foresight": {
+      "mean": 25.0,
+      "p2_5": 25.0,
+      "p97_5": 25.0
+    }
+  },
+  "cost": {
+    "Run to failure": {
+      "mean": 13060000.0,
+      "p2_5": 6250000.0,
+      "p97_5": 22250000.0
+    },
+    "Time-based (age limit)": {
+      "mean": 7480000.0,
+      "p2_5": 3630000.000000001,
+      "p97_5": 11730000.000000011
+    },
+    "FaultWatch plan (fleet MILP)": {
+      "mean": 1520000.0,
+      "p2_5": 830000.0,
+      "p97_5": 4830000.0
+    },
+    "FaultWatch, itinerary-aware": {
+      "mean": 835750.0,
+      "p2_5": 830000.0,
+      "p97_5": 835750.0000000013
+    },
+    "Perfect foresight": {
+      "mean": 500000.0,
+      "p2_5": 500000.0,
+      "p97_5": 500000.0
+    }
+  },
+  "blackouts_avoided_vs_run_to_failure": {
+    "mean": 3.178000000000001,
+    "p2_5": 0.0,
+    "p97_5": 7.466666666666667
+  },
+  "itinerary_awareness_gain": {
+    "blackouts_mean": 0.32199999999999995,
+    "p2_5": 0.0,
+    "p97_5": 1.8666666666666667
+  }
+}
