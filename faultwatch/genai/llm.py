@@ -87,7 +87,7 @@ class OpenAIProvider(AzureOpenAIProvider):
 
     def __init__(self):
         from openai import OpenAI
-        self.model = os.environ.get("OPENAI_MODEL", "gpt-4.1")
+        self.model = os.environ.get("OPENAI_MODEL", "gpt-4.1-mini")
         self.client = OpenAI()
 
 
