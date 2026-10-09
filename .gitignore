@@ -11,3 +11,4 @@ monitoring/
 corpus/.cache/
 spark-warehouse/
 *.egg-info/
+.env

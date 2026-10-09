@@ -149,8 +149,24 @@ class ExtractiveProvider:
         return LLMResponse(text, self.name, self.model, len(user) // 4, len(text) // 4, time.perf_counter() - t0, 0.0)
 
 
+def load_dotenv(path: str | os.PathLike | None = None) -> None:
+    """Read KEY=value lines from the repo's .env (gitignored) into the
+    environment, without overriding variables that are already set."""
+    from pathlib import Path
+    p = Path(path) if path else Path(os.environ.get("FAULTWATCH_ROOT", Path(__file__).resolve().parents[2])) / ".env"
+    if not p.is_file():
+        return
+    for line in p.read_text().splitlines():
+        line = line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        k, v = line.removeprefix("export ").split("=", 1)
+        os.environ.setdefault(k.strip(), v.strip().strip("'\""))
+
+
 def get_provider(name: str | None = None):
     """Explicit name, FAULTWATCH_LLM, or the first provider with credentials."""
+    load_dotenv()
     name = name or os.environ.get("FAULTWATCH_LLM")
     table = {"azure_openai": AzureOpenAIProvider, "openai": OpenAIProvider, "anthropic": AnthropicProvider,
              "extractive": ExtractiveProvider}
