@@ -66,7 +66,7 @@ def _supported(sentence: str, evidence: dict[str, str]) -> bool:
 
 
 def answer_metrics(cp: Copilot, gold: pd.DataFrame, judge=None) -> tuple[dict, pd.DataFrame]:
-    rows = []
+    rows, judge_cost, judge_failures = [], 0.0, 0
     for g in gold.itertuples():
         t0 = time.perf_counter()
         a = cp.answer(g.question)
@@ -76,11 +76,17 @@ def answer_metrics(cp: Copilot, gold: pd.DataFrame, judge=None) -> tuple[dict, p
         # short uncited lines are headings ("1. Likely causes"), not claims
         sentences = [s for s in sentences if TAG_RE.search(s) or len(s.split()) >= 8]
         if judge is not None and a.get("evidence") and not a["insufficient_evidence"]:
-            j = judge.complete(prompts.JUDGE_SYSTEM, prompts.JUDGE_USER.format(answer=a["answer"],
-                                                                               evidence=a["evidence"]),
-                               json_mode=True, max_tokens=300).json()
-            sup = j.get("supported_sentences", 0) / max(1, j.get("supported_sentences", 0)
-                                                        + j.get("unsupported_sentences", 0))
+            jr = judge.complete(prompts.JUDGE_SYSTEM, prompts.JUDGE_USER.format(answer=a["answer"],
+                                                                                evidence=a["evidence"]),
+                                json_mode=True, max_tokens=1000)
+            judge_cost += jr.cost_usd
+            try:
+                j = jr.json()
+                n_sup, n_uns = int(j["supported_sentences"]), int(j["unsupported_sentences"])
+                sup = n_sup / (n_sup + n_uns) if n_sup + n_uns else np.nan
+            except (ValueError, KeyError, TypeError):
+                sup = np.nan                      # unparseable verdict: missing, not "unsupported"
+                judge_failures += 1
         else:
             sup = np.mean([_supported(s, ev) for s in sentences]) if sentences else np.nan
         cited_docs = {c["doc_id"] for c in a["citations"]}
@@ -100,7 +106,8 @@ def answer_metrics(cp: Copilot, gold: pd.DataFrame, judge=None) -> tuple[dict, p
             "false_refusal_rate": float(on.refused.mean()) if len(on) else None,
             "off_topic_refusal_rate": float(off.refused.mean()) if len(off) else None,
             "latency_s_p50": float(d.latency_s.median()), "latency_s_p95": float(d.latency_s.quantile(0.95)),
-            "cost_usd_per_answer": float(d.cost_usd.mean())}, d
+            "cost_usd_per_answer": float(d.cost_usd.mean()),
+            **({"judge_cost_usd": judge_cost, "judge_failures": judge_failures} if judge is not None else {})}, d
 
 
 def triage_metrics(cp: Copilot, limit: int | None = None) -> dict:
@@ -108,21 +115,23 @@ def triage_metrics(cp: Copilot, limit: int | None = None) -> dict:
     lab = man[(man.source == "ntsb") & (man.casualty_type != "")]
     if limit:
         lab = lab.sample(min(limit, len(lab)), random_state=0)
-    y, p = [], []
+    y, p, cost = [], [], 0.0
     for doc in lab.itertuples():
         ch = cp.r.chunks[cp.r.chunks.doc_id == doc.doc_id].head(2)
         text = " ".join(ch.text)
         text = re.sub(r"(?:Accident|Casualty)\s+[Tt]ype\s+[A-Za-z/ ,\-]+?(?=\s+Location|\s{2}|$)", " ", text)
         text = text.replace(doc.title, " ")
         y.append(prompts.ntsb_event_class(doc.casualty_type))
-        p.append(cp.triage(text, exclude_doc=doc.doc_id)["event_type"])
+        t = cp.triage(text, exclude_doc=doc.doc_id)
+        p.append(t["event_type"])
+        cost += t.get("cost_usd", 0.0)
     y, p = np.array(y), np.array(p)
     majority = pd.Series(y).mode()[0] if len(y) else None
     return {"reports": int(len(y)), "method": "llm" if not isinstance(cp.llm, ExtractiveProvider) else "knn_retrieval",
             "accuracy": float(accuracy_score(y, p)) if len(y) else None,
             "macro_f1": float(f1_score(y, p, average="macro")) if len(y) else None,
             "majority_class": majority, "majority_baseline_accuracy": float((y == majority).mean()) if len(y) else None,
-            "label_distribution": pd.Series(y).value_counts().to_dict()}
+            "label_distribution": pd.Series(y).value_counts().to_dict(), "cost_usd_total": cost}
 
 
 def main(argv=None):

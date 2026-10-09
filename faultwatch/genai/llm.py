@@ -30,6 +30,8 @@ PRICES = {  # USD per 1M input / output tokens (list prices; override with env v
     "claude-opus-5-5": (4.00, 20.00),
     "claude-sonnet-5-5": (2.00, 10.00),
     "claude-haiku-4-5": (1.00, 5.00),
+    "gpt-4.1": (2.00, 8.00),
+    "gpt-4.1-mini": (0.40, 1.60),
 }
 
 

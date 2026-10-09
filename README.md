@@ -195,16 +195,23 @@ power, blackouts, steering failures and machinery damage are kept.
 | Embeddings (all-MiniLM-L6-v2) | 87% | 83% |
 | **Hybrid (production)** | **96%** | **83%** |
 
-| Answers (offline extractive provider) | |
-|---|---|
-| Citations pointing at retrieved passages | 100% |
-| Answer sentences supported by the cited passage | 99.6% |
-| Off-topic questions refused / answerable questions refused | 6 of 6 / 0 of 57 |
-| Triage event type vs NTSB's own casualty type (103 reports) | macro-F1 0.37 with the offline k-NN baseline |
+| Answers | Offline extractive | gpt-4.1-mini |
+|---|---|---|
+| Citations pointing at retrieved passages | 100% | 100% |
+| Answers citing the report the question is about | 93% | 95% |
+| Answer sentences supported by the cited passage | 99.6% (token overlap) | 99.0% (LLM judge) |
+| Off-topic questions refused / answerable questions refused | 6 of 6 / 0 of 57 | 6 of 6 / 0 of 57 |
+| Triage event type vs NTSB's own casualty type (103 reports) | 69% accuracy, macro-F1 0.37 (k-NN) | 84% accuracy, macro-F1 0.61 |
+| Latency p50 / p95, cost per answer | instant, $0 | 5.9 s / 8.1 s, $0.0017 |
 
-The offline triage baseline is weak by design (fires are 74% of the labels);
-it is the bar an LLM has to clear. With an Azure OpenAI key the same command
-runs the real model and an LLM judge for faithfulness, and
+The offline triage baseline is weak by design: fires are 74% of the labels,
+so always answering "fire" scores 74%. The LLM is the first method to beat
+that bar. Faithfulness under the LLM was graded by the same model (cheap but
+lenient); a stronger or different judge model would be the stricter check.
+The whole gpt-4.1-mini run (63 answers, judge, 103 triage calls) cost about
+$0.25 (`OPENAI_MODEL=gpt-4.1-mini python -m faultwatch.genai.evals --judge`;
+results in `reports/incident_copilot_gpt41mini/`). With an Azure OpenAI key the same command
+runs the deployed model, and
 `deploy/azure_foundry/` exports the prompts as Prompty files plus a Foundry
 groundedness/relevance evaluation.
 

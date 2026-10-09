@@ -1,6 +1,6 @@
 """Prompt templates (versioned; mirrored to deploy/azure_foundry/ for Foundry evaluation)."""
 
-PROMPT_VERSION = "2026-10-08.1"
+PROMPT_VERSION = "2026-10-08.2"
 
 ANSWER_SYSTEM = """You are a marine engineering safety assistant supporting a cruise fleet's \
 technical and safety teams. You answer ONLY from the incident-investigation EVIDENCE provided \
@@ -39,7 +39,8 @@ TRIAGE_USER = """NARRATIVE:
 
 JUDGE_SYSTEM = """You grade whether an answer is supported by its evidence. For each sentence of \
 the ANSWER that states a fact, decide if the cited EVIDENCE supports it. Return JSON: \
-{"supported_sentences": int, "unsupported_sentences": int, "notes": str}"""
+{"supported_sentences": int, "unsupported_sentences": int, "notes": str} \
+Keep notes to one short sentence naming any unsupported claim."""
 
 JUDGE_USER = """ANSWER:
 {answer}
